@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  s-bank:
+    image: mohammadnowresideh1997/s-bank
+    env_file:
+      - /root/config/s-bank.env.txt
+    container_name: s-bank
+    ports:
+      - 3003:3003
+    networks:
+      - services_app-network
+
+networks:
+  services_app-network:
+    external: true
