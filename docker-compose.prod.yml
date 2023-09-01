@@ -1,16 +1,13 @@
 version: '3.8'
-
 services:
-  bank:
-    build:
-      context: .
-      dockerfile: Dockerfile.prod
+  s-bank-prod:
+    image: ${DOCKER_USERNAME}/s-bank-prod
     env_file:
-      - /root/config/bank.env.txt
-    container_name: bank
+      - /root/config/s-bank-prod.env.txt
+    container_name: s-bank-prod
     restart: always
     ports:
-      - 3003:3003
+      - ${PORT}:${PORT}
     networks:
       - services_app-network
 
