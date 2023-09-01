@@ -1,12 +1,13 @@
 version: '3.8'
 services:
-  s-bank:
-    image: mohammadnowresideh1997/s-bank
+  s-bank-staging:
+    image: ${DOCKER_USERNAME}/s-bank-staging
     env_file:
-      - /root/config/s-bank.env.txt
-    container_name: s-bank
+      - /root/config/s-bank-staging.env.txt
+    container_name: s-bank-staging
+    restart: always
     ports:
-      - 3003:3003
+      - ${PORT}:${PORT}
     networks:
       - services_app-network
 
