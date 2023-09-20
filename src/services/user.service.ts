@@ -2,12 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { RmqContext, RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserWithBillInfoDto } from 'src/dtos';
-import {
-  CreatedUserObj,
-  DeletedUserObj,
-  RestoredUserObj,
-  UpdatedUserObj,
-} from 'src/types';
+import { CreatedUserObj, DeletedUserObj, RestoredUserObj, UpdatedUserObj } from 'src/types';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../entities';
 import { RabbitmqService } from './rabbitmq.service';
@@ -33,12 +28,7 @@ export class UserService {
       createdUser = Object.assign<User, Partial<User>>(createdUser, {
         userServiceId: createdUser.id,
       });
-      await this.userRepository
-        .createQueryBuilder()
-        .insert()
-        .into(User)
-        .values(createdUser)
-        .execute();
+      await this.userRepository.createQueryBuilder().insert().into(User).values(createdUser).execute();
       this.rabbitmqService.applyAcknowledgment(context);
     } catch (error) {
       throw new RpcException(error);
@@ -148,10 +138,7 @@ export class UserService {
     return response;
   }
 
-  async restoreUser(
-    payload: RestoredUserObj,
-    entityManager: EntityManager,
-  ): Promise<void> {
+  async restoreUser(payload: RestoredUserObj, entityManager: EntityManager): Promise<void> {
     await entityManager
       .createQueryBuilder(User, 'public.user')
       .restore()
