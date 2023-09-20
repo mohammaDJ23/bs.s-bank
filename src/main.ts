@@ -2,7 +2,6 @@ import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { swagger } from './libs';
 import { AppModule } from './modules';
-import { RabbitMqQueue } from './types';
 
 require('dotenv').config();
 
@@ -13,7 +12,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [process.env.RABBITMQ_URL],
-      queue: RabbitMqQueue.BANK,
+      queue: process.env.BANK_RABBITMQ_QUEUE,
       queueOptions: {
         durable: true,
       },
