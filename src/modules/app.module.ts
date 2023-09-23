@@ -8,7 +8,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Bill, User } from '../entities';
 import { AllExceptionFilter } from '../filters';
-import { CronJobsController, GatewayController, MessagePatternController } from '../controllers';
+import {
+  BillController,
+  BillCronJobsController,
+  UserController,
+  UserMessagePatternController,
+} from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
 import { BillService, UserService, RabbitmqService } from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
@@ -55,7 +60,7 @@ import { RestoreUserTransaction } from 'src/transactions';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
   ],
-  controllers: [GatewayController, MessagePatternController, CronJobsController],
+  controllers: [BillController, BillCronJobsController, UserController, UserMessagePatternController],
   providers: [
     UserService,
     BillService,

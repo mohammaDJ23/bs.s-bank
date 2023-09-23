@@ -11,7 +11,7 @@ import {
 } from 'src/types';
 
 @Controller('/message-patterns/v1/bank')
-export class MessagePatternController {
+export class UserMessagePatternController {
   constructor(private readonly userService: UserService) {}
 
   @EventPattern('created_user')
@@ -37,6 +37,6 @@ export class MessagePatternController {
     @Payload() payload: RestoredUserObj,
     @Ctx() context: RmqContext,
   ): Promise<RestoredOneUserObj> {
-    return this.userService.restoreOne(payload, context);
+    return this.userService.restore(payload, context);
   }
 }

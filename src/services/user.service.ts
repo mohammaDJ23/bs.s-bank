@@ -94,7 +94,7 @@ export class UserService {
     }
   }
 
-  async getUserWithBillInfo(id: number): Promise<UserWithBillInfoDto> {
+  async findByIdWithBillSummary(id: number): Promise<UserWithBillInfoDto> {
     const [response]: UserWithBillInfoDto[] = await this.userRepository.query(
       `
         SELECT
@@ -147,19 +147,23 @@ export class UserService {
     return response;
   }
 
-  async restoreUserWithEntityManager(payload: RestoredUserObj, entityManager: EntityManager): Promise<User> {
+  async restoreWithEntityManager(
+    restoredUserId: number,
+    currentUserId: number,
+    entityManager: EntityManager,
+  ): Promise<User> {
     return entityManager
       .createQueryBuilder(User, 'public.user')
       .restore()
-      .where('public.user.user_service_id = :userId')
+      .where('public.user.user_service_id = :restoredUserId')
       .andWhere('public.user.deleted_at IS NOT NULL')
       .andWhere('public.user.created_by = :currentUserId')
-      .setParameters({ userId: payload.restoredUser.id, currentUserId: payload.currentUser.id })
+      .setParameters({ restoredUserId, currentUserId })
       .returning('*')
       .exe({ noEffectError: 'Could not restore the user.' });
   }
 
-  async restoreOne(payload: RestoredUserObj, context: RmqContext): Promise<RestoredOneUserObj> {
+  async restore(payload: RestoredUserObj, context: RmqContext): Promise<RestoredOneUserObj> {
     try {
       const result = await this.restoreUserTransaction.run(payload);
       this.rabbitmqService.applyAcknowledgment(context);

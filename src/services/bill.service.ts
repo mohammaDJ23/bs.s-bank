@@ -18,8 +18,6 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
-import { RestoredUserObj } from 'src/types';
-import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class BillService {
@@ -28,7 +26,7 @@ export class BillService {
     private readonly userService: UserService,
   ) {}
 
-  async createBill(body: CreateBillDto, user: User): Promise<Bill> {
+  async create(body: CreateBillDto, user: User): Promise<Bill> {
     const createdBill = this.billRepository.create(body);
     createdBill.user = user;
     return this.billRepository
@@ -40,7 +38,7 @@ export class BillService {
       .exe();
   }
 
-  async updateBill(body: UpdateBillDto, user: User): Promise<Bill> {
+  async update(body: UpdateBillDto, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .update(Bill)
@@ -52,7 +50,7 @@ export class BillService {
       .exe();
   }
 
-  async deleteBill(id: string, user: User): Promise<Bill> {
+  async delete(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .softDelete()
@@ -63,13 +61,13 @@ export class BillService {
       .exe();
   }
 
-  async findById(billId: string, user: User): Promise<Bill> {
+  async findById(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
       .where('user.user_service_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ billId, userId: user.userServiceId })
+      .setParameters({ billId: id, userId: user.userServiceId })
       .getOneOrFail();
   }
 
@@ -156,7 +154,7 @@ export class BillService {
       .getManyAndCount();
   }
 
-  async getTotalAmount(user: User): Promise<TotalAmountDto> {
+  async totalAmount(user: User): Promise<TotalAmountDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -186,7 +184,7 @@ export class BillService {
       .getRawOne();
   }
 
-  async lastWeekBills(user: User): Promise<LastWeekDto[]> {
+  async lastWeek(user: User): Promise<LastWeekDto[]> {
     return this.billRepository.query(
       `
         WITH lastWeek (date) AS (
@@ -216,7 +214,7 @@ export class BillService {
     );
   }
 
-  getBillQuantities(): Promise<BillQuantitiesDto> {
+  quantities(): Promise<BillQuantitiesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .select('COUNT(bill.id)::TEXT', 'quantities')
@@ -228,7 +226,7 @@ export class BillService {
     return join(process.cwd(), '/reports');
   }
 
-  async getBillReports(id: number): Promise<StreamableFile> {
+  async report(id: number): Promise<StreamableFile> {
     const user = await this.userService.findById(id);
 
     if (!user) throw new NotFoundException('Could not found the user.');
@@ -275,7 +273,7 @@ export class BillService {
     });
   }
 
-  removeBillReports(): void {
+  removeReport(): void {
     const path = this.getBillReportPath();
     if (existsSync(path))
       readdir(path, (err, data) => {
@@ -294,21 +292,18 @@ export class BillService {
       });
   }
 
-  async restoreBillsWithEntityManager(
-    payload: RestoredUserObj,
-    entityManager: EntityManager,
-  ): Promise<Bill[]> {
+  async restoreManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
     return entityManager
       .createQueryBuilder(Bill, 'bill')
       .restore()
       .where('bill.user_id = :userId')
       .andWhere('bill.deleted_at IS NOT NULL')
-      .setParameters({ userId: payload.restoredUser.id })
+      .setParameters({ userId: id })
       .returning('*')
       .exe({ resultType: 'array' });
   }
 
-  async restoreOne(id: number, user: User): Promise<Bill> {
+  async restore(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .restore()
@@ -319,7 +314,7 @@ export class BillService {
       .exe();
   }
 
-  findDeletedOne(id: number, user: User): Promise<Bill> {
+  findByIdDeleted(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .withDeleted()

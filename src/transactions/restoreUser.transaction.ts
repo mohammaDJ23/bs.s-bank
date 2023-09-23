@@ -23,8 +23,12 @@ export class RestoreUserTransaction extends BaseTransaction<
     data: RestoredUserTransactionInput,
     manager: EntityManager,
   ): Promise<RestoredUserTransactionOutput> {
-    const restoredUser = await this.userService.restoreUserWithEntityManager(data, manager);
-    const restoredBills = await this.billService.restoreBillsWithEntityManager(data, manager);
+    const restoredUser = await this.userService.restoreWithEntityManager(
+      data.restoredUser.id,
+      data.currentUser.id,
+      manager,
+    );
+    const restoredBills = await this.billService.restoreManyWithEntityManager(data.restoredUser.id, manager);
     return { restoredUser, restoredBills };
   }
 }
