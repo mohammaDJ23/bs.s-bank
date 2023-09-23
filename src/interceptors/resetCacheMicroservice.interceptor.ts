@@ -7,7 +7,7 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { Cache } from 'cache-manager';
-import { map } from 'rxjs';
+import { mergeMap } from 'rxjs';
 import { getCacheKeyForMicroservice } from 'src/libs';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class ResetCacheMicroserviceInterceptor implements NestInterceptor {
 
   async intercept(context: ExecutionContext, handler: CallHandler): Promise<any> {
     return handler.handle().pipe(
-      map(async (data: any) => {
+      mergeMap(async (data: any) => {
         const cacheKeyForMicroservice = getCacheKeyForMicroservice(context);
         const cachedData = await this.cacheService.get(cacheKeyForMicroservice);
 

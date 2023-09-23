@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  StreamableFile,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   LastWeekDto,
@@ -24,6 +19,7 @@ import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
 import { RestoredUserObj } from 'src/types';
+import { RpcException } from '@nestjs/microservices';
 
 @Injectable()
 export class BillService {
@@ -166,23 +162,14 @@ export class BillService {
       .leftJoinAndSelect('bill.user', 'user')
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
-      .addSelect(
-        'COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT',
-        'start',
-      )
-      .addSelect(
-        'COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT',
-        'end',
-      )
+      .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
+      .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
       .where('user.user_service_id = :userId')
       .setParameters({ userId: user.userServiceId })
       .getRawOne();
   }
 
-  async periodAmount(
-    body: PeriodAmountDto,
-    user: User,
-  ): Promise<TotalAmountWithoutDatesDto> {
+  async periodAmount(body: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -284,9 +271,7 @@ export class BillService {
           if (err) console.log(err);
         });
       });
-      readedFile.on('error', (err: Error) =>
-        reject(new InternalServerErrorException(err.message)),
-      );
+      readedFile.on('error', (err: Error) => reject(new InternalServerErrorException(err.message)));
     });
   }
 
@@ -309,17 +294,18 @@ export class BillService {
       });
   }
 
-  async restoreBills(
+  async restoreBillsWithEntityManager(
     payload: RestoredUserObj,
     entityManager: EntityManager,
-  ): Promise<void> {
-    await entityManager
+  ): Promise<Bill[]> {
+    return entityManager
       .createQueryBuilder(Bill, 'bill')
       .restore()
       .where('bill.user_id = :userId')
       .andWhere('bill.deleted_at IS NOT NULL')
       .setParameters({ userId: payload.restoredUser.id })
-      .execute();
+      .returning('*')
+      .exe({ resultType: 'array' });
   }
 
   async restoreOne(id: number, user: User): Promise<Bill> {

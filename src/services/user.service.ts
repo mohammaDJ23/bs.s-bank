@@ -1,17 +1,26 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { RmqContext, RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserWithBillInfoDto } from 'src/dtos';
-import { CreatedUserObj, DeletedUserObj, RestoredUserObj, UpdatedUserObj } from 'src/types';
+import {
+  CreatedUserObj,
+  DeletedUserObj,
+  RestoredOneUserObj,
+  RestoredUserObj,
+  UpdatedUserObj,
+} from 'src/types';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../entities';
 import { RabbitmqService } from './rabbitmq.service';
+import { RestoreUserTransaction } from 'src/transactions';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly rabbitmqService: RabbitmqService,
+    @Inject(forwardRef(() => RestoreUserTransaction))
+    private readonly restoreUserTransaction: RestoreUserTransaction,
   ) {}
 
   findById(id: number): Promise<User> {
@@ -138,13 +147,25 @@ export class UserService {
     return response;
   }
 
-  async restoreUser(payload: RestoredUserObj, entityManager: EntityManager): Promise<void> {
-    await entityManager
+  async restoreUserWithEntityManager(payload: RestoredUserObj, entityManager: EntityManager): Promise<User> {
+    return entityManager
       .createQueryBuilder(User, 'public.user')
       .restore()
       .where('public.user.user_service_id = :userId')
       .andWhere('public.user.deleted_at IS NOT NULL')
-      .setParameters({ userId: payload.restoredUser.id })
-      .execute();
+      .andWhere('public.user.created_by = :currentUserId')
+      .setParameters({ userId: payload.restoredUser.id, currentUserId: payload.currentUser.id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not restore the user.' });
+  }
+
+  async restoreOne(payload: RestoredUserObj, context: RmqContext): Promise<RestoredOneUserObj> {
+    try {
+      const result = await this.restoreUserTransaction.run(payload);
+      this.rabbitmqService.applyAcknowledgment(context);
+      return result;
+    } catch (error) {
+      throw new RpcException(error);
+    }
   }
 }

@@ -1,18 +1,18 @@
 import { Controller, UseInterceptors } from '@nestjs/common';
-import { Ctx, EventPattern, Payload, RmqContext, RpcException } from '@nestjs/microservices';
+import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { ResetCacheMicroserviceInterceptor } from 'src/interceptors';
-import { BillService, RabbitmqService, UserService } from 'src/services';
-import { CreatedUserObj, DeletedUserObj, RestoredUserObj, UpdatedUserObj } from 'src/types';
-import { DataSource } from 'typeorm';
+import { UserService } from 'src/services';
+import {
+  CreatedUserObj,
+  DeletedUserObj,
+  RestoredOneUserObj,
+  RestoredUserObj,
+  UpdatedUserObj,
+} from 'src/types';
 
 @Controller('/message-patterns/v1/bank')
 export class MessagePatternController {
-  constructor(
-    private readonly userService: UserService,
-    private readonly billService: BillService,
-    private readonly dataSource: DataSource,
-    private readonly rabbitmqService: RabbitmqService,
-  ) {}
+  constructor(private readonly userService: UserService) {}
 
   @EventPattern('created_user')
   createUser(@Payload() payload: CreatedUserObj, @Ctx() context: RmqContext): void {
@@ -31,26 +31,12 @@ export class MessagePatternController {
     this.userService.delete(payload, context);
   }
 
-  @EventPattern('restored_user')
+  @MessagePattern('restored_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  async restore(@Payload() payload: RestoredUserObj, @Ctx() context: RmqContext): Promise<void> {
-    try {
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      try {
-        await this.userService.restoreUser(payload, queryRunner.manager);
-        await this.billService.restoreBills(payload, queryRunner.manager);
-        await queryRunner.commitTransaction();
-        this.rabbitmqService.applyAcknowledgment(context);
-      } catch (err) {
-        await queryRunner.rollbackTransaction();
-        throw err;
-      } finally {
-        await queryRunner.release();
-      }
-    } catch (error) {
-      throw new RpcException(error);
-    }
+  async restore(
+    @Payload() payload: RestoredUserObj,
+    @Ctx() context: RmqContext,
+  ): Promise<RestoredOneUserObj> {
+    return this.userService.restoreOne(payload, context);
   }
 }
