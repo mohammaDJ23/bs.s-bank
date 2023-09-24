@@ -5,7 +5,7 @@ import { UserService } from 'src/services';
 import {
   CreatedUserObj,
   DeletedUserObj,
-  RestoredOneUserObj,
+  RestoredUserWithBillsObj,
   RestoredUserObj,
   UpdatedUserObj,
 } from 'src/types';
@@ -15,19 +15,19 @@ export class UserMessagePatternController {
   constructor(private readonly userService: UserService) {}
 
   @EventPattern('created_user')
-  createUser(@Payload() payload: CreatedUserObj, @Ctx() context: RmqContext): void {
+  create(@Payload() payload: CreatedUserObj, @Ctx() context: RmqContext): void {
     this.userService.create(payload, context);
   }
 
   @EventPattern('updated_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  updateUser(@Payload() payload: UpdatedUserObj, @Ctx() context: RmqContext): void {
+  update(@Payload() payload: UpdatedUserObj, @Ctx() context: RmqContext): void {
     this.userService.update(payload, context);
   }
 
   @EventPattern('deleted_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  deleteUser(@Payload() payload: DeletedUserObj, @Ctx() context: RmqContext): void {
+  delete(@Payload() payload: DeletedUserObj, @Ctx() context: RmqContext): void {
     this.userService.delete(payload, context);
   }
 
@@ -36,7 +36,7 @@ export class UserMessagePatternController {
   async restore(
     @Payload() payload: RestoredUserObj,
     @Ctx() context: RmqContext,
-  ): Promise<RestoredOneUserObj> {
+  ): Promise<RestoredUserWithBillsObj> {
     return this.userService.restore(payload, context);
   }
 }

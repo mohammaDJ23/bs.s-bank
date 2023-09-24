@@ -5,7 +5,7 @@ import { UserWithBillInfoDto } from 'src/dtos';
 import {
   CreatedUserObj,
   DeletedUserObj,
-  RestoredOneUserObj,
+  RestoredUserWithBillsObj,
   RestoredUserObj,
   UpdatedUserObj,
 } from 'src/types';
@@ -163,7 +163,7 @@ export class UserService {
       .exe({ noEffectError: 'Could not restore the user.' });
   }
 
-  async restore(payload: RestoredUserObj, context: RmqContext): Promise<RestoredOneUserObj> {
+  async restore(payload: RestoredUserObj, context: RmqContext): Promise<RestoredUserWithBillsObj> {
     try {
       const result = await this.restoreUserTransaction.run(payload);
       this.rabbitmqService.applyAcknowledgment(context);

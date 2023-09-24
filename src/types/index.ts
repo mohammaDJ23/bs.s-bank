@@ -86,12 +86,8 @@ export interface RestoredUserObj extends CurrentUserObj {
   restoredUser: User;
 }
 
-export interface RestoredBills {
+export interface RestoredBillsObj {
   restoredBills: Bill[];
 }
 
-export type RestoredUserTransactionInput = RestoredUserObj;
-
-export type RestoredUserTransactionOutput = Pick<RestoredUserObj, 'restoredUser'> & RestoredBills;
-
-export interface RestoredOneUserObj extends RestoredUserTransactionOutput {}
+export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}
