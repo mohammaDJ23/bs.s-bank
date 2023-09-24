@@ -8,11 +8,12 @@ import {
   RestoredUserWithBillsObj,
   RestoredUserObj,
   UpdatedUserObj,
+  DeletedUserWithBillsObj,
 } from 'src/types';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../entities';
 import { RabbitmqService } from './rabbitmq.service';
-import { RestoreUserTransaction } from 'src/transactions';
+import { DeleteUserTransaction, RestoreUserTransaction } from 'src/transactions';
 
 @Injectable()
 export class UserService {
@@ -21,6 +22,8 @@ export class UserService {
     private readonly rabbitmqService: RabbitmqService,
     @Inject(forwardRef(() => RestoreUserTransaction))
     private readonly restoreUserTransaction: RestoreUserTransaction,
+    @Inject(forwardRef(() => DeleteUserTransaction))
+    private readonly deleteUserTransaction: DeleteUserTransaction,
   ) {}
 
   findById(id: number): Promise<User> {
@@ -79,16 +82,27 @@ export class UserService {
     }
   }
 
-  async delete(payload: DeletedUserObj, context: RmqContext): Promise<void> {
-    try {
-      const deletedUser = payload.deletedUser;
+  async deleteWithEntityManager(
+    deletedUserId: number,
+    currentUserId: number,
+    entityManager: EntityManager,
+  ): Promise<User> {
+    return entityManager
+      .createQueryBuilder(User, 'public.user')
+      .softDelete()
+      .where('public.user.user_service_id = :deletedUserId')
+      .andWhere('public.user.deleted_at IS NULL')
+      .andWhere('public.user.created_by = :currentUserId')
+      .setParameters({ deletedUserId, currentUserId })
+      .returning('*')
+      .exe({ noEffectError: 'Could not delete the user.' });
+  }
 
-      const user = await this.userRepository.findOneOrFail({
-        where: { userServiceId: deletedUser.id },
-        relations: ['bills'],
-      });
-      await this.userRepository.softRemove(user);
+  async delete(payload: DeletedUserObj, context: RmqContext): Promise<DeletedUserWithBillsObj> {
+    try {
+      const result = await this.deleteUserTransaction.run(payload);
       this.rabbitmqService.applyAcknowledgment(context);
+      return result;
     } catch (error) {
       throw new RpcException(error);
     }

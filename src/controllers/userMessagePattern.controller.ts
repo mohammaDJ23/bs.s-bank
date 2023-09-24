@@ -8,6 +8,7 @@ import {
   RestoredUserWithBillsObj,
   RestoredUserObj,
   UpdatedUserObj,
+  DeletedUserWithBillsObj,
 } from 'src/types';
 
 @Controller('/message-patterns/v1/bank')
@@ -25,10 +26,13 @@ export class UserMessagePatternController {
     this.userService.update(payload, context);
   }
 
-  @EventPattern('deleted_user')
+  @MessagePattern('deleted_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  delete(@Payload() payload: DeletedUserObj, @Ctx() context: RmqContext): void {
-    this.userService.delete(payload, context);
+  async delete(
+    @Payload() payload: DeletedUserObj,
+    @Ctx() context: RmqContext,
+  ): Promise<DeletedUserWithBillsObj> {
+    return this.userService.delete(payload, context);
   }
 
   @MessagePattern('restored_user')

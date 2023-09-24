@@ -50,6 +50,17 @@ export class BillService {
       .exe();
   }
 
+  async deleteManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
+    return entityManager
+      .createQueryBuilder(Bill, 'bill')
+      .softDelete()
+      .where('bill.user_id = :userId')
+      .andWhere('bill.deleted_at IS NULL')
+      .setParameters({ userId: id })
+      .returning('*')
+      .exe({ resultType: 'array' });
+  }
+
   async delete(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')

@@ -90,4 +90,10 @@ export interface RestoredBillsObj {
   restoredBills: Bill[];
 }
 
+export interface DeletedBillsObj {
+  deletedBills: Bill[];
+}
+
 export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}
+
+export interface DeletedUserWithBillsObj extends Pick<DeletedUserObj, 'deletedUser'>, DeletedBillsObj {}
