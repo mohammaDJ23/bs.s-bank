@@ -1,5 +1,6 @@
 import { Controller, UseInterceptors } from '@nestjs/common';
 import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import { User } from 'src/entities';
 import { ResetCacheMicroserviceInterceptor } from 'src/interceptors';
 import { UserService } from 'src/services';
 import {
@@ -20,10 +21,10 @@ export class UserMessagePatternController {
     this.userService.create(payload, context);
   }
 
-  @EventPattern('updated_user')
+  @MessagePattern('updated_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  update(@Payload() payload: UpdatedUserObj, @Ctx() context: RmqContext): void {
-    this.userService.update(payload, context);
+  update(@Payload() payload: UpdatedUserObj, @Ctx() context: RmqContext): Promise<User> {
+    return this.userService.update(payload, context);
   }
 
   @MessagePattern('deleted_user')

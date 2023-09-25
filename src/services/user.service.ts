@@ -47,36 +47,27 @@ export class UserService {
     }
   }
 
-  async update(payload: UpdatedUserObj, context: RmqContext): Promise<void> {
+  async update(payload: UpdatedUserObj, context: RmqContext): Promise<User> {
     try {
-      const udpatedUser = payload.updatedUser;
-
-      await this.userRepository.query(
-        `
-          UPDATE public.user
-          SET 
-            email = $1,
-            first_name = $2,
-            last_name = $3,
-            password = $4,
-            phone = $5,
-            role = $6,
-            user_service_id = $7,
-            updated_at = $8
-          WHERE public.user.user_service_id = $7;
-        `,
-        [
-          udpatedUser.email,
-          udpatedUser.firstName,
-          udpatedUser.lastName,
-          udpatedUser.password,
-          udpatedUser.phone,
-          udpatedUser.role,
-          udpatedUser.id,
-          udpatedUser.updatedAt,
-        ],
-      );
+      const updatedUser = await this.userRepository
+        .createQueryBuilder('public.user')
+        .update()
+        .set({
+          email: payload.updatedUser.email,
+          firstName: payload.updatedUser.firstName,
+          lastName: payload.updatedUser.lastName,
+          password: payload.updatedUser.password,
+          phone: payload.updatedUser.phone,
+          role: payload.updatedUser.role,
+          updatedAt: new Date(payload.updatedUser.updatedAt),
+        })
+        .where('public.user.user_service_id = :userId')
+        .andWhere('public.user.created_by = :currentUserId')
+        .setParameters({ userId: payload.updatedUser.id, currentUserId: payload.currentUser.id })
+        .returning('*')
+        .exe({ noEffectError: 'Could not update the user.' });
       this.rabbitmqService.applyAcknowledgment(context);
+      return updatedUser;
     } catch (error) {
       throw new RpcException(error);
     }
