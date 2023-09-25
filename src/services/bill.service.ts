@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-  StreamableFile,
-} from '@nestjs/common';
+import { Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   LastWeekDto,
@@ -23,7 +18,6 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
-import { RestoredUserObj } from 'src/types';
 
 @Injectable()
 export class BillService {
@@ -32,7 +26,7 @@ export class BillService {
     private readonly userService: UserService,
   ) {}
 
-  async createBill(body: CreateBillDto, user: User): Promise<Bill> {
+  async create(body: CreateBillDto, user: User): Promise<Bill> {
     const createdBill = this.billRepository.create(body);
     createdBill.user = user;
     return this.billRepository
@@ -44,7 +38,7 @@ export class BillService {
       .exe();
   }
 
-  async updateBill(body: UpdateBillDto, user: User): Promise<Bill> {
+  async update(body: UpdateBillDto, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .update(Bill)
@@ -56,7 +50,18 @@ export class BillService {
       .exe();
   }
 
-  async deleteBill(id: string, user: User): Promise<Bill> {
+  async deleteManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
+    return entityManager
+      .createQueryBuilder(Bill, 'bill')
+      .softDelete()
+      .where('bill.user_id = :userId')
+      .andWhere('bill.deleted_at IS NULL')
+      .setParameters({ userId: id })
+      .returning('*')
+      .exe({ resultType: 'array' });
+  }
+
+  async delete(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .softDelete()
@@ -67,13 +72,13 @@ export class BillService {
       .exe();
   }
 
-  async findById(billId: string, user: User): Promise<Bill> {
+  async findById(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
       .where('user.user_service_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ billId, userId: user.userServiceId })
+      .setParameters({ billId: id, userId: user.userServiceId })
       .getOneOrFail();
   }
 
@@ -160,29 +165,20 @@ export class BillService {
       .getManyAndCount();
   }
 
-  async getTotalAmount(user: User): Promise<TotalAmountDto> {
+  async totalAmount(user: User): Promise<TotalAmountDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
-      .addSelect(
-        'COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT',
-        'start',
-      )
-      .addSelect(
-        'COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT',
-        'end',
-      )
+      .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
+      .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
       .where('user.user_service_id = :userId')
       .setParameters({ userId: user.userServiceId })
       .getRawOne();
   }
 
-  async periodAmount(
-    body: PeriodAmountDto,
-    user: User,
-  ): Promise<TotalAmountWithoutDatesDto> {
+  async periodAmount(body: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -199,7 +195,7 @@ export class BillService {
       .getRawOne();
   }
 
-  async lastWeekBills(user: User): Promise<LastWeekDto[]> {
+  async lastWeek(user: User): Promise<LastWeekDto[]> {
     return this.billRepository.query(
       `
         WITH lastWeek (date) AS (
@@ -229,7 +225,7 @@ export class BillService {
     );
   }
 
-  getBillQuantities(): Promise<BillQuantitiesDto> {
+  quantities(): Promise<BillQuantitiesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .select('COUNT(bill.id)::TEXT', 'quantities')
@@ -241,7 +237,7 @@ export class BillService {
     return join(process.cwd(), '/reports');
   }
 
-  async getBillReports(id: number): Promise<StreamableFile> {
+  async report(id: number): Promise<StreamableFile> {
     const user = await this.userService.findById(id);
 
     if (!user) throw new NotFoundException('Could not found the user.');
@@ -284,13 +280,11 @@ export class BillService {
           if (err) console.log(err);
         });
       });
-      readedFile.on('error', (err: Error) =>
-        reject(new InternalServerErrorException(err.message)),
-      );
+      readedFile.on('error', (err: Error) => reject(new InternalServerErrorException(err.message)));
     });
   }
 
-  removeBillReports(): void {
+  removeReport(): void {
     const path = this.getBillReportPath();
     if (existsSync(path))
       readdir(path, (err, data) => {
@@ -309,20 +303,18 @@ export class BillService {
       });
   }
 
-  async restoreBills(
-    payload: RestoredUserObj,
-    entityManager: EntityManager,
-  ): Promise<void> {
-    await entityManager
+  async restoreManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
+    return entityManager
       .createQueryBuilder(Bill, 'bill')
       .restore()
       .where('bill.user_id = :userId')
       .andWhere('bill.deleted_at IS NOT NULL')
-      .setParameters({ userId: payload.restoredUser.id })
-      .execute();
+      .setParameters({ userId: id })
+      .returning('*')
+      .exe({ resultType: 'array' });
   }
 
-  async restoreOne(id: number, user: User): Promise<Bill> {
+  async restore(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .restore()
@@ -333,7 +325,7 @@ export class BillService {
       .exe();
   }
 
-  findDeletedOne(id: number, user: User): Promise<Bill> {
+  findByIdDeleted(id: string, user: User): Promise<Bill> {
     return this.billRepository
       .createQueryBuilder('bill')
       .withDeleted()

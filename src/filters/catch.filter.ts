@@ -1,10 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { HttpArgumentsHost } from '@nestjs/common/interfaces/features/arguments-host.interface';
 import { AbstractHttpAdapter, HttpAdapterHost } from '@nestjs/core';
 import { MESSAGES } from '@nestjs/core/constants';
@@ -22,11 +16,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     httpAdapter.reply(ctx.getResponse(), responseBody, responseBody.statusCode);
   }
 
-  private getResponseBody(
-    httpAdapter: AbstractHttpAdapter,
-    ctx: HttpArgumentsHost,
-    exception: any,
-  ) {
+  private getResponseBody(httpAdapter: AbstractHttpAdapter, ctx: HttpArgumentsHost, exception: any) {
     const { statusCode, message } = this.getExceptionInfo(exception);
     const timestamp = new Date().getTime();
     const path = httpAdapter.getRequestUrl(ctx.getRequest());
@@ -39,14 +29,11 @@ export class AllExceptionFilter implements ExceptionFilter {
   }
 
   private getStatusCode(exception: Exception) {
-    return exception instanceof Object
-      ? exception.statusCode
-      : HttpStatus.INTERNAL_SERVER_ERROR;
+    return exception instanceof Object ? exception.statusCode : HttpStatus.INTERNAL_SERVER_ERROR;
   }
 
   private getExceptionInfo(exception: any) {
-    if (process.env.NODE_ENV === 'development')
-      console.log(exception, exception.constructor.name);
+    if (process.env.NODE_ENV === 'development') console.log(exception, exception.constructor.name);
 
     // HttpException inside the actual routes
     const isHttpException = exception instanceof HttpException;
@@ -55,8 +42,7 @@ export class AllExceptionFilter implements ExceptionFilter {
     const isRpcException = exception instanceof RpcException;
 
     // errors from messagePatterns
-    const isObjectException =
-      exception instanceof Object && Reflect.has(exception, 'response');
+    const isObjectException = exception instanceof Object && Reflect.has(exception, 'response');
 
     // errors which are an string
     const isStringException = typeof exception === 'string';

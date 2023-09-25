@@ -8,11 +8,17 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Bill, User } from '../entities';
 import { AllExceptionFilter } from '../filters';
-import { CronJobsController, GatewayController, MessagePatternController } from '../controllers';
+import {
+  BillController,
+  BillCronJobsController,
+  UserController,
+  UserMessagePatternController,
+} from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
 import { BillService, UserService, RabbitmqService } from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { DeleteUserTransaction, RestoreUserTransaction } from 'src/transactions';
 
 @Module({
   imports: [
@@ -54,12 +60,14 @@ import { redisStore } from 'cache-manager-redis-yet';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
   ],
-  controllers: [GatewayController, MessagePatternController, CronJobsController],
+  controllers: [BillController, BillCronJobsController, UserController, UserMessagePatternController],
   providers: [
     UserService,
     BillService,
     JwtStrategy,
     RabbitmqService,
+    RestoreUserTransaction,
+    DeleteUserTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
     {
       provide: APP_PIPE,

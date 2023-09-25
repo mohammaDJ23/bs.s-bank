@@ -1,4 +1,3 @@
-import { UserRoles } from 'src/types';
 import {
   Entity,
   Column,
@@ -11,6 +10,7 @@ import {
   DeleteDateColumn,
 } from 'typeorm';
 import { Bill } from '../entities';
+import { UserRoles } from 'src/types';
 
 @Entity()
 export class User {
