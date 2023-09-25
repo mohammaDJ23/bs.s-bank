@@ -1,5 +1,5 @@
 import { Controller, UseInterceptors } from '@nestjs/common';
-import { Ctx, EventPattern, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
+import { Ctx, MessagePattern, Payload, RmqContext } from '@nestjs/microservices';
 import { User } from 'src/entities';
 import { ResetCacheMicroserviceInterceptor } from 'src/interceptors';
 import { UserService } from 'src/services';
