@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, NotFoundException, forwardRef } from '@nestjs/common';
 import { RmqContext, RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserWithBillInfoDto } from 'src/dtos';
@@ -33,15 +33,28 @@ export class UserService {
       .getOneOrFail();
   }
 
-  async create(payload: CreatedUserObj, context: RmqContext): Promise<void> {
+  async create(payload: CreatedUserObj, context: RmqContext): Promise<User> {
     try {
-      let createdUser = payload.createdUser;
+      let findedUser = await this.userRepository
+        .createQueryBuilder('public.user')
+        .withDeleted()
+        .where('public.user.email = :email', { email: payload.createdUser.email })
+        .getOne();
 
-      createdUser = Object.assign<User, Partial<User>>(createdUser, {
-        userServiceId: createdUser.id,
+      if (findedUser) throw new ConflictException('The user already exist.');
+
+      payload.createdUser = Object.assign<User, Partial<User>>(payload.createdUser, {
+        userServiceId: payload.createdUser.id,
       });
-      await this.userRepository.createQueryBuilder().insert().into(User).values(createdUser).execute();
+      const createdUser = await this.userRepository
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values(payload.createdUser)
+        .returning('*')
+        .exe({ noEffectError: 'Could not create the user.' });
       this.rabbitmqService.applyAcknowledgment(context);
+      return createdUser;
     } catch (error) {
       throw new RpcException(error);
     }

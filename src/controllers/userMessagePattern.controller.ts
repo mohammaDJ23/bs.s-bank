@@ -16,9 +16,9 @@ import {
 export class UserMessagePatternController {
   constructor(private readonly userService: UserService) {}
 
-  @EventPattern('created_user')
-  create(@Payload() payload: CreatedUserObj, @Ctx() context: RmqContext): void {
-    this.userService.create(payload, context);
+  @MessagePattern('created_user')
+  create(@Payload() payload: CreatedUserObj, @Ctx() context: RmqContext): Promise<User> {
+    return this.userService.create(payload, context);
   }
 
   @MessagePattern('updated_user')
@@ -29,16 +29,13 @@ export class UserMessagePatternController {
 
   @MessagePattern('deleted_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  async delete(
-    @Payload() payload: DeletedUserObj,
-    @Ctx() context: RmqContext,
-  ): Promise<DeletedUserWithBillsObj> {
+  delete(@Payload() payload: DeletedUserObj, @Ctx() context: RmqContext): Promise<DeletedUserWithBillsObj> {
     return this.userService.delete(payload, context);
   }
 
   @MessagePattern('restored_user')
   @UseInterceptors(ResetCacheMicroserviceInterceptor)
-  async restore(
+  restore(
     @Payload() payload: RestoredUserObj,
     @Ctx() context: RmqContext,
   ): Promise<RestoredUserWithBillsObj> {
