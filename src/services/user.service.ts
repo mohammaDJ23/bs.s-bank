@@ -51,14 +51,15 @@ export class UserService {
 
     if (findedUser) throw new ConflictException('The user already exist.');
 
-    createdUser = Object.assign<User, Partial<User>>(createdUser, {
-      userServiceId: createdUser.id,
-    });
     const newUser = await entityManager
       .createQueryBuilder()
       .insert()
       .into(User)
-      .values(createdUser)
+      .values(
+        Object.assign<{}, User, Partial<User>>({}, createdUser, {
+          userServiceId: createdUser.id,
+        }),
+      )
       .returning('*')
       .exe({ noEffectError: 'Could not create the user.' });
     return newUser;
