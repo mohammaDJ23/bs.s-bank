@@ -13,13 +13,22 @@ import {
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../entities';
 import { RabbitmqService } from './rabbitmq.service';
-import { DeleteUserTransaction, RestoreUserTransaction } from 'src/transactions';
+import {
+  DeleteUserTransaction,
+  RestoreUserTransaction,
+  CreateUserTransaction,
+  UpdateUserTransaction,
+} from 'src/transactions';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
     private readonly rabbitmqService: RabbitmqService,
+    @Inject(forwardRef(() => CreateUserTransaction))
+    private readonly createUserTransaction: CreateUserTransaction,
+    @Inject(forwardRef(() => UpdateUserTransaction))
+    private readonly updateUserTransaction: UpdateUserTransaction,
     @Inject(forwardRef(() => RestoreUserTransaction))
     private readonly restoreUserTransaction: RestoreUserTransaction,
     @Inject(forwardRef(() => DeleteUserTransaction))
@@ -33,54 +42,63 @@ export class UserService {
       .getOneOrFail();
   }
 
+  async createWithEntityManager(createdUser: User, entityManager: EntityManager) {
+    let findedUser = await entityManager
+      .createQueryBuilder(User, 'public.user')
+      .withDeleted()
+      .where('public.user.email = :email', { email: createdUser.email })
+      .getOne();
+
+    if (findedUser) throw new ConflictException('The user already exist.');
+
+    createdUser = Object.assign<User, Partial<User>>(createdUser, {
+      userServiceId: createdUser.id,
+    });
+    createdUser = await entityManager
+      .createQueryBuilder()
+      .insert()
+      .into(User)
+      .values(createdUser)
+      .returning('*')
+      .exe({ noEffectError: 'Could not create the user.' });
+    return createdUser;
+  }
+
   async create(payload: CreatedUserObj, context: RmqContext): Promise<User> {
     try {
-      let findedUser = await this.userRepository
-        .createQueryBuilder('public.user')
-        .withDeleted()
-        .where('public.user.email = :email', { email: payload.createdUser.email })
-        .getOne();
-
-      if (findedUser) throw new ConflictException('The user already exist.');
-
-      payload.createdUser = Object.assign<User, Partial<User>>(payload.createdUser, {
-        userServiceId: payload.createdUser.id,
-      });
-      const createdUser = await this.userRepository
-        .createQueryBuilder()
-        .insert()
-        .into(User)
-        .values(payload.createdUser)
-        .returning('*')
-        .exe({ noEffectError: 'Could not create the user.' });
+      const result = await this.createUserTransaction.run(payload);
       this.rabbitmqService.applyAcknowledgment(context);
-      return createdUser;
+      return result;
     } catch (error) {
       throw new RpcException(error);
     }
   }
 
+  updateWithEntityManager(updatedUser: User, currentUser: User, entityManager: EntityManager) {
+    return entityManager
+      .createQueryBuilder(User, 'public.user')
+      .update()
+      .set({
+        email: updatedUser.email,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        password: updatedUser.password,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        updatedAt: new Date(updatedUser.updatedAt),
+      })
+      .where('public.user.user_service_id = :userId')
+      .andWhere('public.user.created_by = :currentUserId')
+      .setParameters({ userId: updatedUser.id, currentUserId: currentUser.id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not update the user.' });
+  }
+
   async update(payload: UpdatedUserObj, context: RmqContext): Promise<User> {
     try {
-      const updatedUser = await this.userRepository
-        .createQueryBuilder('public.user')
-        .update()
-        .set({
-          email: payload.updatedUser.email,
-          firstName: payload.updatedUser.firstName,
-          lastName: payload.updatedUser.lastName,
-          password: payload.updatedUser.password,
-          phone: payload.updatedUser.phone,
-          role: payload.updatedUser.role,
-          updatedAt: new Date(payload.updatedUser.updatedAt),
-        })
-        .where('public.user.user_service_id = :userId')
-        .andWhere('public.user.created_by = :currentUserId')
-        .setParameters({ userId: payload.updatedUser.id, currentUserId: payload.currentUser.id })
-        .returning('*')
-        .exe({ noEffectError: 'Could not update the user.' });
+      const result = await this.updateUserTransaction.run(payload);
       this.rabbitmqService.applyAcknowledgment(context);
-      return updatedUser;
+      return result;
     } catch (error) {
       throw new RpcException(error);
     }
