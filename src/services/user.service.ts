@@ -54,14 +54,14 @@ export class UserService {
     createdUser = Object.assign<User, Partial<User>>(createdUser, {
       userServiceId: createdUser.id,
     });
-    createdUser = await entityManager
+    const newUser = await entityManager
       .createQueryBuilder()
       .insert()
       .into(User)
       .values(createdUser)
       .returning('*')
       .exe({ noEffectError: 'Could not create the user.' });
-    return createdUser;
+    return newUser;
   }
 
   async create(payload: CreatedUserObj, context: RmqContext): Promise<User> {
