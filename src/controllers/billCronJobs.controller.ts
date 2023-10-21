@@ -3,11 +3,11 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { BillService } from 'src/services';
 
 @Controller('/cron-jobs/v1/bank')
-export class CronJobsController {
+export class BillCronJobsController {
   constructor(private readonly billService: BillService) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  removeBillReports(): void {
-    this.billService.removeBillReports();
+  removeReport(): void {
+    this.billService.removeReport();
   }
 }

@@ -10,30 +10,33 @@ import {
 import { SoftDeleteQueryBuilder } from 'typeorm/query-builder/SoftDeleteQueryBuilder';
 import { camelcaseKeys } from './camelcase';
 
-async function exe<Entity>(
-  this: QueryBuilder<Entity>,
-  options: ExeOptions = {},
-) {
+async function exe<Entity>(this: QueryBuilder<Entity>, options: ExeOptions = {}) {
   options.camelcase = options.camelcase ?? true;
+  options.resultType = options.resultType ?? 'object';
 
   const updatedResult = await this.execute();
-  let [rawResult] = updatedResult.raw;
 
-  if (typeof rawResult === 'undefined' || rawResult === null || !rawResult) {
-    throw new BadRequestException('No affects applied.');
+  if (updatedResult.affected <= 0 && options.noEffectError) {
+    throw new BadRequestException(options.noEffectError);
   }
+
+  let raw = updatedResult.raw;
+
   if (options.camelcase) {
-    if (typeof rawResult === 'object') {
-      return camelcaseKeys(rawResult);
-    }
+    raw = updatedResult.raw.map((item: any) => {
+      if (typeof item === 'object') {
+        return camelcaseKeys(item);
+      }
+      return item;
+    });
   }
 
-  return rawResult;
+  raw = options.resultType === 'array' ? raw : raw[0];
+
+  return raw;
 }
 
-SelectQueryBuilder.prototype.getOneOrFail = async function <Entity>(
-  this: SelectQueryBuilder<Entity>,
-) {
+SelectQueryBuilder.prototype.getOneOrFail = async function <Entity>(this: SelectQueryBuilder<Entity>) {
   const entity = await this.getOne();
   if (!entity) {
     throw new NotFoundException('Could not be found the entity');

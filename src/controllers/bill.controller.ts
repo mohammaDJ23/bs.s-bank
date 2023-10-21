@@ -26,7 +26,6 @@ import {
   PeriodAmountDto,
   LastWeekDto,
   ErrorDto,
-  UserWithBillInfoDto,
   UpdatedBillDto,
   DeletedBillDto,
   BillQuantitiesDto,
@@ -37,8 +36,7 @@ import {
 } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 import { DifferentOwnerGuard, JwtGuard, RolesGuard, SameUserGuard } from 'src/guards';
-import { BillService, UserService } from 'src/services';
-import { CacheKeys, UserRoles } from 'src/types';
+import { BillService } from 'src/services';
 import { ParseBillListFiltersPipe } from 'src/pipes';
 import {
   BillsSerializerInterceptor,
@@ -52,16 +50,16 @@ import {
   TotalAmountSerializerInterceptor,
   TotalAmountWithoutDatesSerializerInterceptor,
   UpdatedBillSerializerInterceptor,
-  UserWithBillInfoSerializerInterceptor,
   CacheInterceptor,
   ResetCacheInterceptor,
 } from 'src/interceptors';
+import { UserRoles } from 'src/types';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
 @ApiTags('/api/v1/bank')
-export class GatewayController {
-  constructor(private readonly billService: BillService, private readonly userService: UserService) {}
+export class BillController {
+  constructor(private readonly billService: BillService) {}
 
   @Post('bill/create')
   @HttpCode(HttpStatus.CREATED)
@@ -71,8 +69,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.CREATED, type: CreatedBillDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  createBill(@Body() body: CreateBillDto, @CurrentUser() user: User): Promise<Bill> {
-    return this.billService.createBill(body, user);
+  create(@Body() body: CreateBillDto, @CurrentUser() user: User): Promise<Bill> {
+    return this.billService.create(body, user);
   }
 
   @Put('bill/update')
@@ -84,8 +82,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  updateBill(@Body() body: UpdateBillDto, @CurrentUser() user: User): Promise<Bill> {
-    return this.billService.updateBill(body, user);
+  update(@Body() body: UpdateBillDto, @CurrentUser() user: User): Promise<Bill> {
+    return this.billService.update(body, user);
   }
 
   @Delete('bill/delete')
@@ -97,8 +95,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  deleteBill(@Query('id') id: string, @CurrentUser() user: User): Promise<Bill> {
-    return this.billService.deleteBill(id, user);
+  delete(@Query('id') id: string, @CurrentUser() user: User): Promise<Bill> {
+    return this.billService.delete(id, user);
   }
 
   @Get('bill/total-amount')
@@ -108,8 +106,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.OK, type: TotalAmountDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  getTotalAmount(@CurrentUser() user: User): Promise<TotalAmountDto> {
-    return this.billService.getTotalAmount(user);
+  totalAmount(@CurrentUser() user: User): Promise<TotalAmountDto> {
+    return this.billService.totalAmount(user);
   }
 
   @Get('bill/quantities')
@@ -121,8 +119,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  getBillQuantities(): Promise<BillQuantitiesDto> {
-    return this.billService.getBillQuantities();
+  quantities(): Promise<BillQuantitiesDto> {
+    return this.billService.quantities();
   }
 
   @Post('bill/period-amount')
@@ -133,7 +131,7 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.OK, type: TotalAmountWithoutDatesDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  PeriodAmount(
+  periodAmount(
     @Body() body: PeriodAmountDto,
     @CurrentUser() user: User,
   ): Promise<TotalAmountWithoutDatesDto> {
@@ -147,8 +145,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.OK, type: LastWeekDto, isArray: true })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  lastWeekBills(@CurrentUser() user: User): Promise<LastWeekDto[]> {
-    return this.billService.lastWeekBills(user);
+  lastWeek(@CurrentUser() user: User): Promise<LastWeekDto[]> {
+    return this.billService.lastWeek(user);
   }
 
   @Get('bill/excel')
@@ -162,8 +160,8 @@ export class GatewayController {
   @ApiResponse({ status: HttpStatus.OK, type: StreamableFile })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  getBillReports(@Query('id', ParseIntPipe) id: number): Promise<StreamableFile> {
-    return this.billService.getBillReports(id);
+  report(@Query('id') id: number): Promise<StreamableFile> {
+    return this.billService.report(id);
   }
 
   @Get('bill/all')
@@ -221,41 +219,26 @@ export class GatewayController {
   @Get('bill/:id/deleted')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(CacheInterceptor, DeletedBillSerializerInterceptor)
-  @ApiParam({ name: 'id', type: 'number' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: DeletedBillDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  findDeletedOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Bill> {
-    return this.billService.findDeletedOne(id, user);
+  findByIdDeleted(@Param('id') id: string, @CurrentUser() user: User): Promise<Bill> {
+    return this.billService.findByIdDeleted(id, user);
   }
 
   @Post('bill/:id/restore')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(ResetCacheInterceptor, RestoredBillSerializerInterceptor)
-  @ApiParam({ name: 'id', type: 'number' })
+  @ApiParam({ name: 'id', type: 'string' })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: RestoredBillDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  restoreOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Bill> {
-    return this.billService.restoreOne(id, user);
-  }
-
-  @Get('user/:id')
-  @HttpCode(HttpStatus.OK)
-  @SameUser(UserRoles.USER)
-  @UseGuards(SameUserGuard)
-  @UseInterceptors(CacheInterceptor, UserWithBillInfoSerializerInterceptor)
-  @ApiParam({ name: 'id', type: 'number' })
-  @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: UserWithBillInfoDto })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
-  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
-  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  getUserWithBillInfo(@Param('id', ParseIntPipe) id: number): Promise<UserWithBillInfoDto> {
-    return this.userService.getUserWithBillInfo(id);
+  restore(@Param('id') id: string, @CurrentUser() user: User): Promise<Bill> {
+    return this.billService.restore(id, user);
   }
 }

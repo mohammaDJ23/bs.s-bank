@@ -1,5 +1,5 @@
 import { Request as Req } from 'express';
-import { User } from 'src/entities';
+import { Bill, User } from 'src/entities';
 
 export interface CurrentUserObj {
   currentUser: User;
@@ -85,3 +85,15 @@ export interface DeletedUserObj extends CurrentUserObj {
 export interface RestoredUserObj extends CurrentUserObj {
   restoredUser: User;
 }
+
+export interface RestoredBillsObj {
+  restoredBills: Bill[];
+}
+
+export interface DeletedBillsObj {
+  deletedBills: Bill[];
+}
+
+export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}
+
+export interface DeletedUserWithBillsObj extends Pick<DeletedUserObj, 'deletedUser'>, DeletedBillsObj {}

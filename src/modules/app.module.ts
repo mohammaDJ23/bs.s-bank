@@ -2,17 +2,28 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_PIPE, APP_FILTER } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
-import { ClientsModule } from '@nestjs/microservices';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Bill, User } from '../entities';
 import { AllExceptionFilter } from '../filters';
-import { CronJobsController, GatewayController, MessagePatternController } from '../controllers';
+import {
+  BillController,
+  BillCronJobsController,
+  UserController,
+  UserMessagePatternController,
+} from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
 import { BillService, UserService, RabbitmqService } from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import {
+  CreateUserTransaction,
+  DeleteUserTransaction,
+  RestoreUserTransaction,
+  UpdateUserTransaction,
+} from 'src/transactions';
 
 @Module({
   imports: [
@@ -29,7 +40,20 @@ import { redisStore } from 'cache-manager-redis-yet';
       }),
     }),
     ScheduleModule.forRoot(),
-    ClientsModule.register([]),
+    ClientsModule.register([
+      {
+        name: process.env.NOTIFICATION_RABBITMQ_SERVICE,
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL],
+          queue: process.env.NOTIFICATION_RABBITMQ_QUEUE,
+          queueOptions: {
+            durable: true,
+          },
+          noAck: false,
+        },
+      },
+    ]),
     TypeOrmModule.forRootAsync({
       useFactory: () => ({
         type: 'postgres',
@@ -54,12 +78,16 @@ import { redisStore } from 'cache-manager-redis-yet';
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
   ],
-  controllers: [GatewayController, MessagePatternController, CronJobsController],
+  controllers: [BillController, BillCronJobsController, UserController, UserMessagePatternController],
   providers: [
     UserService,
     BillService,
     JwtStrategy,
     RabbitmqService,
+    CreateUserTransaction,
+    UpdateUserTransaction,
+    RestoreUserTransaction,
+    DeleteUserTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
     {
       provide: APP_PIPE,
