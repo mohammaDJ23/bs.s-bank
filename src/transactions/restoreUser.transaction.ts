@@ -3,6 +3,7 @@ import { BillService, UserService } from 'src/services';
 import { RestoredUserObj, RestoredUserWithBillsObj } from 'src/types';
 import { DataSource, EntityManager } from 'typeorm';
 import { BaseTransaction } from './base.transaction';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class RestoreUserTransaction extends BaseTransaction<RestoredUserObj, RestoredUserWithBillsObj> {
@@ -12,6 +13,8 @@ export class RestoreUserTransaction extends BaseTransaction<RestoredUserObj, Res
     private readonly userService: UserService,
     @Inject(forwardRef(() => BillService))
     private readonly billService: BillService,
+    @Inject(process.env.NOTIFICATION_RABBITMQ_SERVICE)
+    private readonly notificationClientProxy: ClientProxy,
   ) {
     super(dataSource);
   }
@@ -23,6 +26,9 @@ export class RestoreUserTransaction extends BaseTransaction<RestoredUserObj, Res
       manager,
     );
     const restoredBills = await this.billService.restoreManyWithEntityManager(data.restoredUser.id, manager);
+    await this.notificationClientProxy
+      .send('restored_user', { currentUser: data.currentUser, restoredUser: data.restoredUser })
+      .toPromise();
     return { restoredUser, restoredBills };
   }
 }
