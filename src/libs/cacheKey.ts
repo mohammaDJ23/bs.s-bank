@@ -5,8 +5,8 @@ import { CurrentUserObj } from 'src/types';
 
 export function getCacheKey(context: ExecutionContext): string {
   const currentUser = getCurrentUser(context);
-  const userServiceId = currentUser.userServiceId;
-  return `${userServiceId}.${process.env.PORT}`;
+  const id = currentUser.id;
+  return `${id}.${process.env.PORT}`;
 }
 
 export function getCacheKeyForMicroservice(context: ExecutionContext): string {

@@ -36,10 +36,7 @@ export class UserService {
   ) {}
 
   findById(id: number): Promise<User> {
-    return this.userRepository
-      .createQueryBuilder('user')
-      .where('user.user_service_id = :id', { id })
-      .getOneOrFail();
+    return this.userRepository.createQueryBuilder('user').where('user.id = :id', { id }).getOneOrFail();
   }
 
   async createWithEntityManager(createdUser: User, entityManager: EntityManager) {
@@ -51,18 +48,13 @@ export class UserService {
 
     if (findedUser) throw new ConflictException('The user already exist.');
 
-    const newUser = await entityManager
+    return entityManager
       .createQueryBuilder()
       .insert()
       .into(User)
-      .values(
-        Object.assign<{}, User, Partial<User>>({}, createdUser, {
-          userServiceId: createdUser.id,
-        }),
-      )
+      .values(createdUser)
       .returning('*')
       .exe({ noEffectError: 'Could not create the user.' });
-    return newUser;
   }
 
   async create(payload: CreatedUserObj, context: RmqContext): Promise<User> {
@@ -88,7 +80,7 @@ export class UserService {
         role: updatedUser.role,
         updatedAt: new Date(updatedUser.updatedAt),
       })
-      .where('public.user.user_service_id = :userId')
+      .where('public.user.id = :userId')
       .andWhere('public.user.created_by = :currentUserId')
       .setParameters({ userId: updatedUser.id, currentUserId: currentUser.id })
       .returning('*')
@@ -113,7 +105,7 @@ export class UserService {
     return entityManager
       .createQueryBuilder(User, 'public.user')
       .softDelete()
-      .where('public.user.user_service_id = :deletedUserId')
+      .where('public.user.id = :deletedUserId')
       .andWhere('public.user.deleted_at IS NULL')
       .andWhere('public.user.created_by = :currentUserId')
       .setParameters({ deletedUserId, currentUserId })
@@ -135,7 +127,7 @@ export class UserService {
     const [response]: UserWithBillInfoDto[] = await this.userRepository.query(
       `
         SELECT
-          user1.user_service_id AS id,
+          user1.id AS id,
           user1.first_name AS "firstName",
           user1.last_name AS "lastName",
           user1.email AS email,
@@ -147,7 +139,7 @@ export class UserService {
           user1.deleted_at AS "deletedAt",
           json_build_object('counts', COALESCE(bill.counts, 0)::TEXT, 'amounts', COALESCE(bill.amounts, 0)::TEXT) AS bill,
           json_build_object(
-            'id', user2.user_service_id,
+            'id', user2.id,
             'firstName', user2.first_name,
             'lastName', user2.last_name,
             'email', user2.email,
@@ -168,14 +160,14 @@ export class UserService {
           WHERE bill.deleted_at IS NULL
           GROUP BY bill.user_id
         ) bill ON bill.user_id = $1
-        LEFT JOIN public.user AS user2 ON user2.user_service_id = user1.created_by
+        LEFT JOIN public.user AS user2 ON user2.id = user1.created_by
         LEFT JOIN (
           SELECT user3.created_by, COUNT(user3.id) AS created_users
           FROM public.user AS user3
-          WHERE user3.deleted_at IS NULL AND user3.user_service_id != $1
+          WHERE user3.deleted_at IS NULL AND user3.id != $1
           GROUP BY user3.created_by
         ) user3 ON user3.created_by = $1
-        WHERE user1.user_service_id = $1 AND user1.deleted_at IS NULL;
+        WHERE user1.id = $1 AND user1.deleted_at IS NULL;
       `,
       [id],
     );
@@ -192,7 +184,7 @@ export class UserService {
     return entityManager
       .createQueryBuilder(User, 'public.user')
       .restore()
-      .where('public.user.user_service_id = :restoredUserId')
+      .where('public.user.id = :restoredUserId')
       .andWhere('public.user.deleted_at IS NOT NULL')
       .andWhere('public.user.created_by = :currentUserId')
       .setParameters({ restoredUserId, currentUserId })

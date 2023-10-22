@@ -47,6 +47,6 @@ export class Bill {
   deletedAt: Date;
 
   @ManyToOne(() => User, (user) => user.bills, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'user_id', referencedColumnName: 'userServiceId' })
+  @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 }
