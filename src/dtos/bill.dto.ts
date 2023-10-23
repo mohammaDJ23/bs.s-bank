@@ -34,7 +34,7 @@ export class BillDto {
   @ApiProperty()
   deletedAt: Date;
 
-  @Transform(({ obj }) => obj.user.userServiceId)
+  @Transform(({ obj }) => obj.user.id)
   @Expose()
   @ApiProperty()
   userId: number;

@@ -45,7 +45,7 @@ export class BillService {
       .set(body)
       .where('bill.user_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ userId: user.userServiceId, billId: body.id })
+      .setParameters({ userId: user.id, billId: body.id })
       .returning('*')
       .exe();
   }
@@ -67,7 +67,7 @@ export class BillService {
       .softDelete()
       .where('bill.user_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ userId: user.userServiceId, billId: id })
+      .setParameters({ userId: user.id, billId: id })
       .returning('*')
       .exe();
   }
@@ -76,9 +76,9 @@ export class BillService {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
-      .where('user.user_service_id = :userId')
+      .where('user.id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ billId: id, userId: user.userServiceId })
+      .setParameters({ billId: id, userId: user.id })
       .getOneOrFail();
   }
 
@@ -91,7 +91,7 @@ export class BillService {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
-      .where('user.user_service_id = :userId')
+      .where('user.id = :userId')
       .andWhere(
         new Brackets((query) =>
           query
@@ -113,7 +113,7 @@ export class BillService {
       .take(take)
       .skip((page - 1) * take)
       .setParameters({
-        userId: user.userServiceId,
+        userId: user.id,
         q: filters.q,
         fromDate: filters.fromDate,
         toDate: filters.toDate,
@@ -156,7 +156,7 @@ export class BillService {
       .take(take)
       .skip((page - 1) * take)
       .setParameters({
-        userId: user.userServiceId,
+        userId: user.id,
         q: filters.q,
         fromDate: filters.fromDate,
         toDate: filters.toDate,
@@ -173,8 +173,8 @@ export class BillService {
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
-      .where('user.user_service_id = :userId')
-      .setParameters({ userId: user.userServiceId })
+      .where('user.id = :userId')
+      .setParameters({ userId: user.id })
       .getRawOne();
   }
 
@@ -184,11 +184,11 @@ export class BillService {
       .leftJoinAndSelect('bill.user', 'user')
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
-      .where('user.user_service_id = :userId')
+      .where('user.id = :userId')
       .andWhere('bill.date::TIMESTAMP >= :start::TIMESTAMP')
       .andWhere('bill.date::TIMESTAMP <= :end::TIMESTAMP')
       .setParameters({
-        userId: user.userServiceId,
+        userId: user.id,
         start: new Date(body.start),
         end: new Date(body.end),
       })
@@ -221,7 +221,7 @@ export class BillService {
         GROUP BY lastWeek.date
         ORDER BY lastWeek.date ASC;
       `,
-      [user.userServiceId],
+      [user.id],
     );
   }
 
@@ -242,7 +242,7 @@ export class BillService {
 
     if (!user) throw new NotFoundException('Could not found the user.');
 
-    const fileName = `${user.firstName}-${user.lastName}-${user.userServiceId}.xlsx`;
+    const fileName = `${user.firstName}-${user.lastName}-${user.id}.xlsx`;
     const path = this.getBillReportPath();
     const filePath = join(path, fileName);
 
@@ -264,7 +264,7 @@ export class BillService {
       .createQueryBuilder('bill')
       .where('bill.user_id = :userId')
       .orderBy('bill.date', 'DESC')
-      .setParameters({ userId: user.userServiceId })
+      .setParameters({ userId: user.id })
       .getMany();
     if (bills.length) {
       workSheet.addRows(bills);
@@ -320,7 +320,7 @@ export class BillService {
       .restore()
       .where('bill.user_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ billId: id, userId: user.userServiceId })
+      .setParameters({ billId: id, userId: user.id })
       .returning('*')
       .exe();
   }
@@ -332,7 +332,7 @@ export class BillService {
       .where('bill.deletedAt IS NOT NULL')
       .andWhere('bill.id = :billId')
       .andWhere('bill.user_id = :userId')
-      .setParameters({ billId: id, userId: user.userServiceId })
+      .setParameters({ billId: id, userId: user.id })
       .getOneOrFail();
   }
 }
