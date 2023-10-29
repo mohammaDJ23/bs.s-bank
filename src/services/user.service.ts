@@ -81,8 +81,7 @@ export class UserService {
         updatedAt: new Date(updatedUser.updatedAt),
       })
       .where('public.user.id = :userId')
-      .andWhere('public.user.created_by = :currentUserId')
-      .setParameters({ userId: updatedUser.id, currentUserId: currentUser.id })
+      .setParameters({ userId: updatedUser.id })
       .returning('*')
       .exe({ noEffectError: 'Could not update the user.' });
   }
