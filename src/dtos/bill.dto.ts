@@ -16,6 +16,10 @@ export class BillDto {
 
   @Expose()
   @ApiProperty()
+  consumers: string[];
+
+  @Expose()
+  @ApiProperty()
   description: string;
 
   @Expose()
