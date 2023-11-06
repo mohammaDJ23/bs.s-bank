@@ -15,7 +15,7 @@ export class Consumer {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, unique: true })
   name: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
