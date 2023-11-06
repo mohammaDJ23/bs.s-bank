@@ -23,6 +23,7 @@ import {
   CreateUserTransaction,
   DeleteUserTransaction,
   RestoreUserTransaction,
+  UpdateBillTransaction,
   UpdateUserTransaction,
 } from 'src/transactions';
 
@@ -93,6 +94,7 @@ import {
     RestoreUserTransaction,
     DeleteUserTransaction,
     CreateBillTransaction,
+    UpdateBillTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
     {
       provide: APP_PIPE,

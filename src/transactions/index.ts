@@ -4,3 +4,4 @@ export * from './deleteUser.transaction';
 export * from './createUser.transaction';
 export * from './updateUser.transaction';
 export * from './createBill.transaction';
+export * from './updateBill.transaction';

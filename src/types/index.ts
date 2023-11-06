@@ -1,5 +1,5 @@
 import { Request as Req } from 'express';
-import { CreateBillDto } from 'src/dtos';
+import { CreateBillDto, UpdateBillDto } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 
 export interface CurrentUserObj {
@@ -97,6 +97,11 @@ export interface DeletedBillsObj {
 
 export interface CreateBillObj {
   payload: CreateBillDto;
+  user: User;
+}
+
+export interface UpdateBillObj {
+  payload: UpdateBillDto;
   user: User;
 }
 

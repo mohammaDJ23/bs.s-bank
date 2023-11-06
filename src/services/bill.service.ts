@@ -17,6 +17,7 @@ import {
   BillQuantitiesDto,
   BillListFiltersDto,
   DeletedBillListFiltersDto,
+  UpdatedBillDto,
 } from 'src/dtos';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, User } from '../entities';
@@ -25,7 +26,7 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
-import { CreateBillTransaction } from 'src/transactions';
+import { CreateBillTransaction, UpdateBillTransaction } from 'src/transactions';
 
 @Injectable()
 export class BillService {
@@ -34,6 +35,8 @@ export class BillService {
     private readonly userService: UserService,
     @Inject(forwardRef(() => CreateBillTransaction))
     private readonly createBillTransaction: CreateBillTransaction,
+    @Inject(forwardRef(() => UpdateBillTransaction))
+    private readonly updateBillTransaction: UpdateBillTransaction,
   ) {}
 
   createWithEntityManager(payload: CreateBillDto, user: User, manager: EntityManager): Promise<Bill> {
@@ -46,16 +49,21 @@ export class BillService {
     return this.createBillTransaction.run({ payload: body, user });
   }
 
-  async update(body: UpdateBillDto, user: User): Promise<Bill> {
-    return this.billRepository
-      .createQueryBuilder('bill')
+  updateWithEntityManager(payload: UpdateBillDto, user: User, manager: EntityManager): Promise<Bill> {
+    return manager
+      .createQueryBuilder(Bill, 'bill')
+      .leftJoinAndSelect('bill.user', 'user')
       .update(Bill)
-      .set(body)
+      .set(payload)
       .where('bill.user_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ userId: user.id, billId: body.id })
+      .setParameters({ userId: user.id, billId: payload.id })
       .returning('*')
       .exe();
+  }
+
+  async update(body: UpdateBillDto, user: User): Promise<Bill> {
+    return this.updateBillTransaction.run({ payload: body, user });
   }
 
   async deleteManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
