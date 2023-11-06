@@ -1,4 +1,5 @@
 import { Request as Req } from 'express';
+import { CreateBillDto } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 
 export interface CurrentUserObj {
@@ -92,6 +93,11 @@ export interface RestoredBillsObj {
 
 export interface DeletedBillsObj {
   deletedBills: Bill[];
+}
+
+export interface CreateBillObj {
+  payload: CreateBillDto;
+  user: User;
 }
 
 export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}

@@ -1,4 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  StreamableFile,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   LastWeekDto,
@@ -18,24 +25,25 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
+import { CreateBillTransaction } from 'src/transactions';
 
 @Injectable()
 export class BillService {
   constructor(
     @InjectRepository(Bill) private readonly billRepository: Repository<Bill>,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => CreateBillTransaction))
+    private readonly createBillTransaction: CreateBillTransaction,
   ) {}
 
-  async create(body: CreateBillDto, user: User): Promise<Bill> {
-    const createdBill = this.billRepository.create(body);
+  createWithEntityManager(payload: CreateBillDto, user: User, manager: EntityManager): Promise<Bill> {
+    const createdBill = manager.create(Bill, payload);
     createdBill.user = user;
-    return this.billRepository
-      .createQueryBuilder()
-      .insert()
-      .into(Bill)
-      .values(createdBill)
-      .returning('*')
-      .exe();
+    return manager.createQueryBuilder().insert().into(Bill).values(createdBill).returning('*').exe();
+  }
+
+  async create(body: CreateBillDto, user: User): Promise<Bill> {
+    return this.createBillTransaction.run({ payload: body, user });
   }
 
   async update(body: UpdateBillDto, user: User): Promise<Bill> {

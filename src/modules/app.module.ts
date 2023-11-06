@@ -15,10 +15,11 @@ import {
   UserMessagePatternController,
 } from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
-import { BillService, UserService, RabbitmqService } from 'src/services';
+import { BillService, UserService, RabbitmqService, ConsumerService } from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import {
+  CreateBillTransaction,
   CreateUserTransaction,
   DeleteUserTransaction,
   RestoreUserTransaction,
@@ -86,10 +87,12 @@ import {
     BillService,
     JwtStrategy,
     RabbitmqService,
+    ConsumerService,
     CreateUserTransaction,
     UpdateUserTransaction,
     RestoreUserTransaction,
     DeleteUserTransaction,
+    CreateBillTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
     {
       provide: APP_PIPE,
