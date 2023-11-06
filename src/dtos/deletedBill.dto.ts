@@ -16,6 +16,10 @@ export class DeletedBillDto {
 
   @Expose()
   @ApiProperty()
+  consumers: string[];
+
+  @Expose()
+  @ApiProperty()
   description: string;
 
   @Expose()
