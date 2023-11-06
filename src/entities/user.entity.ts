@@ -9,7 +9,7 @@ import {
   ManyToOne,
   DeleteDateColumn,
 } from 'typeorm';
-import { Bill } from '../entities';
+import { Bill, Consumer } from '../entities';
 import { UserRoles } from 'src/types';
 
 @Entity()
@@ -52,6 +52,9 @@ export class User {
 
   @OneToMany(() => Bill, (bill) => bill.user, { cascade: true })
   bills: Bill[];
+
+  @OneToMany(() => Consumer, (consumer) => consumer.user, { cascade: true })
+  consumers: Consumer[];
 
   @OneToMany(() => User, (user) => user.parent)
   users: User[];
