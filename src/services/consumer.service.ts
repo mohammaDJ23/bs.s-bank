@@ -8,9 +8,9 @@ import { Bill, Consumer, User } from '../entities';
 export class ConsumerService {
   constructor(@InjectRepository(Consumer) private readonly ConsumerRepository: Repository<Consumer>) {}
 
-  async createConsumerWithEntityManager(bill: Bill, manager: EntityManager): Promise<void> {
+  async createConsumerWithEntityManager(bill: Bill, user: User, manager: EntityManager): Promise<void> {
     const consumers = bill.consumers.map((consumer) => {
-      return manager.create(Consumer, { name: consumer, user: bill.user });
+      return manager.create(Consumer, { name: consumer, user });
     });
     await manager.createQueryBuilder().insert().orIgnore(true).into(Consumer).values(consumers).execute();
   }

@@ -19,7 +19,7 @@ export class CreateBillTransaction extends BaseTransaction<CreateBillObj, Bill> 
 
   protected async execute(data: CreateBillObj, manager: EntityManager): Promise<Bill> {
     const createdBill = await this.billService.createWithEntityManager(data.payload, data.user, manager);
-    await this.consumerService.createConsumerWithEntityManager(createdBill, manager);
+    await this.consumerService.createConsumerWithEntityManager(createdBill, data.user, manager);
     return createdBill;
   }
 }

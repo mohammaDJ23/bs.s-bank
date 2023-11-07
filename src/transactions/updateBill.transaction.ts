@@ -19,7 +19,7 @@ export class UpdateBillTransaction extends BaseTransaction<UpdateBillObj, Bill> 
 
   protected async execute(data: UpdateBillObj, manager: EntityManager): Promise<Bill> {
     const updatedBill = await this.billService.updateWithEntityManager(data.payload, data.user, manager);
-    await this.consumerService.createConsumerWithEntityManager(updatedBill, manager);
+    await this.consumerService.createConsumerWithEntityManager(updatedBill, data.user, manager);
     return updatedBill;
   }
 }
