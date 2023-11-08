@@ -1,16 +1,13 @@
 import { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
 import { map, Observable } from 'rxjs';
-import { BillDto, DeletedBillDto } from 'src/dtos';
+import { BillDto, ConsumerDto, DeletedBillDto } from 'src/dtos';
 import { ClassConstructor, ListObj } from 'src/types';
 
 export class ListSerializerInterceptor implements NestInterceptor {
   constructor(private dto: ClassConstructor) {}
 
-  intercept(
-    context: ExecutionContext,
-    handler: CallHandler,
-  ): Observable<ListObj> {
+  intercept(context: ExecutionContext, handler: CallHandler): Observable<ListObj> {
     return handler.handle().pipe(
       map((data: ListObj) => {
         let [list, quantity] = data;
@@ -36,5 +33,11 @@ export class BillsSerializerInterceptor extends ListSerializerInterceptor {
 export class DeletedBillsSerializerInterceptor extends ListSerializerInterceptor {
   constructor() {
     super(DeletedBillDto);
+  }
+}
+
+export class ConsumersSerializerInterceptor extends ListSerializerInterceptor {
+  constructor() {
+    super(ConsumerDto);
   }
 }

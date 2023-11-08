@@ -12,10 +12,10 @@ import { User } from './user.entity';
 
 @Entity()
 export class Consumer {
-  @PrimaryGeneratedColumn({ type: 'bigint' })
-  id: string;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   name: string;
 
   @CreateDateColumn({ type: 'timestamptz' })

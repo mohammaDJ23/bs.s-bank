@@ -11,6 +11,7 @@ import { AllExceptionFilter } from '../filters';
 import {
   BillController,
   BillCronJobsController,
+  ConsumerController,
   UserController,
   UserMessagePatternController,
 } from '../controllers';
@@ -82,7 +83,13 @@ import {
       signOptions: { expiresIn: process.env.JWT_EXPIRATION },
     }),
   ],
-  controllers: [BillController, BillCronJobsController, UserController, UserMessagePatternController],
+  controllers: [
+    BillController,
+    BillCronJobsController,
+    UserController,
+    UserMessagePatternController,
+    ConsumerController,
+  ],
   providers: [
     UserService,
     BillService,
