@@ -106,8 +106,7 @@ export class UserService {
       .softDelete()
       .where('public.user.id = :deletedUserId')
       .andWhere('public.user.deleted_at IS NULL')
-      .andWhere('public.user.created_by = :currentUserId')
-      .setParameters({ deletedUserId, currentUserId })
+      .setParameters({ deletedUserId })
       .returning('*')
       .exe({ noEffectError: 'Could not delete the user.' });
   }
