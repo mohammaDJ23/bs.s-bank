@@ -1,5 +1,5 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import { BillService, UserService } from 'src/services';
+import { BillService, ConsumerService, UserService } from 'src/services';
 import { DeletedUserObj, DeletedUserWithBillsObj } from 'src/types';
 import { DataSource, EntityManager } from 'typeorm';
 import { BaseTransaction } from './base.transaction';
@@ -13,6 +13,8 @@ export class DeleteUserTransaction extends BaseTransaction<DeletedUserObj, Delet
     private readonly userService: UserService,
     @Inject(forwardRef(() => BillService))
     private readonly billService: BillService,
+    @Inject(forwardRef(() => ConsumerService))
+    private readonly consumerService: ConsumerService,
     @Inject(process.env.NOTIFICATION_RABBITMQ_SERVICE)
     private readonly notificationClientProxy: ClientProxy,
   ) {
@@ -26,6 +28,7 @@ export class DeleteUserTransaction extends BaseTransaction<DeletedUserObj, Delet
       manager,
     );
     const deletedBills = await this.billService.deleteManyWithEntityManager(data.deletedUser.id, manager);
+    await this.consumerService.deleteWithEntityManager(data.deletedUser.id, manager);
     await this.notificationClientProxy
       .send('deleted_user', { deletedUser: data.deletedUser, currentUser: data.currentUser })
       .toPromise();

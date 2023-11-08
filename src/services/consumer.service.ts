@@ -9,8 +9,8 @@ import { ConsumerListFiltersDto } from 'src/dtos';
 export class ConsumerService {
   constructor(@InjectRepository(Consumer) private readonly ConsumerRepository: Repository<Consumer>) {}
 
-  async createConsumerWithEntityManager(bill: Bill, user: User, manager: EntityManager): Promise<void> {
-    const findedConsumer = await manager
+  async createConsumerWithEntityManager(bill: Bill, user: User, entityManager: EntityManager): Promise<void> {
+    const findedConsumer = await entityManager
       .createQueryBuilder(Consumer, 'consumer')
       .where('consumer.name IN (:...consumers)')
       .andWhere('consumer.user_id = :userId')
@@ -26,9 +26,15 @@ export class ConsumerService {
     }
 
     const newConsumers = consumers.map((consumer) => {
-      return manager.create(Consumer, { name: consumer, user });
+      return entityManager.create(Consumer, { name: consumer, user });
     });
-    await manager.createQueryBuilder().insert().orIgnore(true).into(Consumer).values(newConsumers).execute();
+    await entityManager
+      .createQueryBuilder()
+      .insert()
+      .orIgnore(true)
+      .into(Consumer)
+      .values(newConsumers)
+      .execute();
   }
 
   findAll(
@@ -51,5 +57,23 @@ export class ConsumerService {
       .skip((page - 1) * take)
       .setParameters({ userId: user.id, q: filters.q })
       .getManyAndCount();
+  }
+
+  async deleteWithEntityManager(id: number, entityManager: EntityManager): Promise<void> {
+    await entityManager
+      .createQueryBuilder(Consumer, 'consumer')
+      .softDelete()
+      .where('consumer.user_id = :userId')
+      .setParameters({ userId: id })
+      .execute();
+  }
+
+  async restoreWithEntityManager(id: number, entityManager: EntityManager): Promise<void> {
+    await entityManager
+      .createQueryBuilder(Consumer, 'consumer')
+      .restore()
+      .where('consumer.user_id = :userId')
+      .setParameters({ userId: id })
+      .execute();
   }
 }
