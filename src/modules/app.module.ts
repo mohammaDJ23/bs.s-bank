@@ -6,7 +6,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { Bill, Consumer, User } from '../entities';
+import { Bill, Consumer, Recevier, User } from '../entities';
 import { AllExceptionFilter } from '../filters';
 import {
   BillController,
@@ -68,11 +68,11 @@ import {
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE_NAME,
         namingStrategy: new CustomNamingStrategy(),
-        entities: [Bill, User, Consumer],
+        entities: [Bill, User, Consumer, Recevier],
         synchronize: true,
       }),
     }),
-    TypeOrmModule.forFeature([Bill, User, Consumer]),
+    TypeOrmModule.forFeature([Bill, User, Consumer, Recevier]),
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV}`,
       isGlobal: true,
