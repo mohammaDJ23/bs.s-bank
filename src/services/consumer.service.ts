@@ -7,9 +7,9 @@ import { ConsumerListFiltersDto } from 'src/dtos';
 
 @Injectable()
 export class ConsumerService {
-  constructor(@InjectRepository(Consumer) private readonly ConsumerRepository: Repository<Consumer>) {}
+  constructor(@InjectRepository(Consumer) private readonly consumerRepository: Repository<Consumer>) {}
 
-  async createConsumerWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
+  async createWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
     const findedConsumers = await manager
       .createQueryBuilder(Consumer, 'consumer')
       .where('consumer.name IN (:...consumers)')
@@ -37,7 +37,8 @@ export class ConsumerService {
     filters: ConsumerListFiltersDto,
     user: User,
   ): Promise<[Consumer[], number]> {
-    return this.ConsumerRepository.createQueryBuilder('consumer')
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
       .where('consumer.user_id = :userId')
       .andWhere(
         new Brackets((query) =>

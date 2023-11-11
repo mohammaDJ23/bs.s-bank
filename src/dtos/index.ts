@@ -18,3 +18,4 @@ export * from './restoredBill.dto';
 export * from './consumerListFilters.dto';
 export * from './consumer.dto';
 export * from './allBillListFilters';
+export * from './RecevierListFilters.dto';

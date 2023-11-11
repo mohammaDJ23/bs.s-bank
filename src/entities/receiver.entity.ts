@@ -11,7 +11,7 @@ import {
 import { User } from './user.entity';
 
 @Entity()
-export class Recevier {
+export class Receiver {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -27,7 +27,7 @@ export class Recevier {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deletedAt: Date;
 
-  @ManyToOne(() => User, (user) => user.receviers, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.receivers, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
 }
