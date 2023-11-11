@@ -98,7 +98,43 @@ export class BillService {
       .getOneOrFail();
   }
 
-  async findAll(
+  async findAll(page: number, take: number, filters: BillListFiltersDto): Promise<[Bill[], number]> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .leftJoinAndSelect('bill.user', 'user')
+      .where(
+        new Brackets((query) =>
+          query
+            .where('to_tsvector(bill.receiver) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(bill.description) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(bill.amount) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(user.firstName) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(user.lastName) @@ plainto_tsquery(:q)')
+            .orWhere("bill.receiver ILIKE '%' || :q || '%'")
+            .orWhere("bill.description ILIKE '%' || :q || '%'")
+            .orWhere("bill.amount ILIKE '%' || :q || '%'")
+            .orWhere("user.firstName ILIKE '%' || :q || '%'")
+            .orWhere("user.lastName ILIKE '%' || :q || '%'"),
+        ),
+      )
+      .andWhere(
+        'CASE WHEN (:fromDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:fromDate)::BIGINT ELSE TRUE END',
+      )
+      .andWhere(
+        'CASE WHEN (:toDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:toDate)::BIGINT ELSE TRUE END',
+      )
+      .orderBy('bill.createdAt', 'DESC')
+      .take(take)
+      .skip((page - 1) * take)
+      .setParameters({
+        q: filters.q,
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+      })
+      .getManyAndCount();
+  }
+
+  async findAllByUserId(
     page: number,
     take: number,
     filters: BillListFiltersDto,

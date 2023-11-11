@@ -165,9 +165,11 @@ export class BillController {
     return this.billService.report(id);
   }
 
-  @Get('bill/all')
+  @Get('owner/bill/all')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(CacheInterceptor, BillsSerializerInterceptor)
+  @Roles(UserRoles.OWNER)
+  @UseGuards(RolesGuard)
+  @UseInterceptors(BillsSerializerInterceptor)
   @ApiQuery({ name: 'page', type: 'number' })
   @ApiQuery({ name: 'take', type: 'number' })
   @ApiQuery({ name: 'filters', type: BillListFiltersDto })
@@ -179,9 +181,27 @@ export class BillController {
     @Query('page', ParseIntPipe) page: number,
     @Query('take', ParseIntPipe) take: number,
     @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
+  ): Promise<[Bill[], number]> {
+    return this.billService.findAll(page, take, filters);
+  }
+
+  @Get('bill/all')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(CacheInterceptor, BillsSerializerInterceptor)
+  @ApiQuery({ name: 'page', type: 'number' })
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiQuery({ name: 'filters', type: BillListFiltersDto })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: BillDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findAllByUserId(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
-    return this.billService.findAll(page, take, filters, user);
+    return this.billService.findAllByUserId(page, take, filters, user);
   }
 
   @Get('bill/all/deleted')
