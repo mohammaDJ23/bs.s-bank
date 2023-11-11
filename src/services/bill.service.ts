@@ -39,17 +39,17 @@ export class BillService {
     private readonly updateBillTransaction: UpdateBillTransaction,
   ) {}
 
-  createWithEntityManager(payload: CreateBillDto, user: User, manager: EntityManager): Promise<Bill> {
+  createWithEntityManager(manager: EntityManager, payload: CreateBillDto, user: User): Promise<Bill> {
     const createdBill = manager.create(Bill, payload);
     createdBill.user = user;
     return manager.createQueryBuilder().insert().into(Bill).values(createdBill).returning('*').exe();
   }
 
-  async create(body: CreateBillDto, user: User): Promise<Bill> {
-    return this.createBillTransaction.run({ payload: body, user });
+  async create(payload: CreateBillDto, user: User): Promise<Bill> {
+    return this.createBillTransaction.run(payload, user);
   }
 
-  updateWithEntityManager(payload: UpdateBillDto, user: User, manager: EntityManager): Promise<Bill> {
+  updateWithEntityManager(manager: EntityManager, payload: UpdateBillDto, user: User): Promise<Bill> {
     return manager
       .createQueryBuilder(Bill, 'bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -62,17 +62,17 @@ export class BillService {
       .exe();
   }
 
-  async update(body: UpdateBillDto, user: User): Promise<Bill> {
-    return this.updateBillTransaction.run({ payload: body, user });
+  async update(payload: UpdateBillDto, user: User): Promise<Bill> {
+    return this.updateBillTransaction.run(payload, user);
   }
 
-  async deleteManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
-    return entityManager
+  async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<Bill[]> {
+    return manager
       .createQueryBuilder(Bill, 'bill')
       .softDelete()
-      .where('bill.user_id = :userId')
+      .where('bill.user_id = :id')
       .andWhere('bill.deleted_at IS NULL')
-      .setParameters({ userId: id })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ resultType: 'array' });
   }
@@ -194,7 +194,7 @@ export class BillService {
       .getRawOne();
   }
 
-  async periodAmount(body: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
+  async periodAmount(payload: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -205,8 +205,8 @@ export class BillService {
       .andWhere('bill.date::TIMESTAMP <= :end::TIMESTAMP')
       .setParameters({
         userId: user.id,
-        start: new Date(body.start),
-        end: new Date(body.end),
+        start: new Date(payload.start),
+        end: new Date(payload.end),
       })
       .getRawOne();
   }
@@ -319,13 +319,13 @@ export class BillService {
       });
   }
 
-  async restoreManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
-    return entityManager
+  async restoreManyWithEntityManager(manager: EntityManager, payload: User): Promise<Bill[]> {
+    return manager
       .createQueryBuilder(Bill, 'bill')
       .restore()
-      .where('bill.user_id = :userId')
+      .where('bill.user_id = :id')
       .andWhere('bill.deleted_at IS NOT NULL')
-      .setParameters({ userId: id })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ resultType: 'array' });
   }

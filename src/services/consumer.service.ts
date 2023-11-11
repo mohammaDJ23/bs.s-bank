@@ -9,32 +9,26 @@ import { ConsumerListFiltersDto } from 'src/dtos';
 export class ConsumerService {
   constructor(@InjectRepository(Consumer) private readonly ConsumerRepository: Repository<Consumer>) {}
 
-  async createConsumerWithEntityManager(bill: Bill, user: User, entityManager: EntityManager): Promise<void> {
-    const findedConsumer = await entityManager
+  async createConsumerWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
+    const findedConsumers = await manager
       .createQueryBuilder(Consumer, 'consumer')
       .where('consumer.name IN (:...consumers)')
       .andWhere('consumer.user_id = :userId')
-      .setParameters({ consumers: bill.consumers, userId: user.id })
+      .setParameters({ consumers: payload.consumers, userId: user.id })
       .getMany();
 
-    const consumers = bill.consumers;
-    for (let i = 0; i < findedConsumer.length; i++) {
-      const index = consumers.indexOf(findedConsumer[i].name);
+    const consumers = payload.consumers;
+    for (let i = 0; i < findedConsumers.length; i++) {
+      const index = consumers.indexOf(findedConsumers[i].name);
       if (index > -1) {
         consumers.splice(index, 1);
       }
     }
 
     const newConsumers = consumers.map((consumer) => {
-      return entityManager.create(Consumer, { name: consumer, user });
+      return manager.create(Consumer, { name: consumer, user });
     });
-    await entityManager
-      .createQueryBuilder()
-      .insert()
-      .orIgnore(true)
-      .into(Consumer)
-      .values(newConsumers)
-      .execute();
+    await manager.createQueryBuilder().insert().orIgnore(true).into(Consumer).values(newConsumers).execute();
   }
 
   findAll(
@@ -59,21 +53,21 @@ export class ConsumerService {
       .getManyAndCount();
   }
 
-  async deleteWithEntityManager(id: number, entityManager: EntityManager): Promise<void> {
-    await entityManager
+  async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
+    await manager
       .createQueryBuilder(Consumer, 'consumer')
       .softDelete()
-      .where('consumer.user_id = :userId')
-      .setParameters({ userId: id })
+      .where('consumer.user_id = :id')
+      .setParameters({ id: payload.id })
       .execute();
   }
 
-  async restoreWithEntityManager(id: number, entityManager: EntityManager): Promise<void> {
-    await entityManager
+  async restoreManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
+    await manager
       .createQueryBuilder(Consumer, 'consumer')
       .restore()
-      .where('consumer.user_id = :userId')
-      .setParameters({ userId: id })
+      .where('consumer.user_id = :id')
+      .setParameters({ id: payload.id })
       .execute();
   }
 }

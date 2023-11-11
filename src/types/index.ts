@@ -6,6 +6,10 @@ export interface CurrentUserObj {
   currentUser: User;
 }
 
+export interface UserObj {
+  user: User;
+}
+
 export interface Request extends Req, CurrentUserObj {}
 
 export type Exception =
@@ -71,20 +75,20 @@ export interface CacheKeyRoles {
   type: CacheKeyTypes;
 }
 
-export interface CreatedUserObj extends CurrentUserObj {
-  createdUser: User;
+export interface CreatedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface UpdatedUserObj extends CurrentUserObj {
-  updatedUser: User;
+export interface UpdatedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface DeletedUserObj extends CurrentUserObj {
-  deletedUser: User;
+export interface DeletedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface RestoredUserObj extends CurrentUserObj {
-  restoredUser: User;
+export interface RestoredUserObj extends UserObj {
+  payload: User;
 }
 
 export interface RestoredBillsObj {
@@ -104,7 +108,3 @@ export interface UpdateBillObj {
   payload: UpdateBillDto;
   user: User;
 }
-
-export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}
-
-export interface DeletedUserWithBillsObj extends Pick<DeletedUserObj, 'deletedUser'>, DeletedBillsObj {}

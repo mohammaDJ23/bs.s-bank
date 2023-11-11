@@ -1,12 +1,12 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
 import { BillService, ConsumerService } from 'src/services';
-import { UpdateBillObj } from 'src/types';
 import { DataSource, EntityManager } from 'typeorm';
 import { BaseTransaction } from './base.transaction';
-import { Bill } from 'src/entities';
+import { Bill, User } from 'src/entities';
+import { UpdateBillDto } from 'src/dtos';
 
 @Injectable()
-export class UpdateBillTransaction extends BaseTransaction<UpdateBillObj, Bill> {
+export class UpdateBillTransaction extends BaseTransaction {
   constructor(
     dataSource: DataSource,
     @Inject(forwardRef(() => BillService))
@@ -17,9 +17,9 @@ export class UpdateBillTransaction extends BaseTransaction<UpdateBillObj, Bill> 
     super(dataSource);
   }
 
-  protected async execute(data: UpdateBillObj, manager: EntityManager): Promise<Bill> {
-    const updatedBill = await this.billService.updateWithEntityManager(data.payload, data.user, manager);
-    await this.consumerService.createConsumerWithEntityManager(updatedBill, data.user, manager);
+  protected async execute(manager: EntityManager, payload: UpdateBillDto, user: User): Promise<Bill> {
+    const updatedBill = await this.billService.updateWithEntityManager(manager, payload, user);
+    await this.consumerService.createConsumerWithEntityManager(manager, updatedBill, user);
     return updatedBill;
   }
 }
