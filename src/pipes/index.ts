@@ -1,2 +1,3 @@
-export * from './BillListFilters.pipe';
+export * from './billListFilters.pipe';
 export * from './consumerListFilters.pipe';
+export * from './allBillListFilters.pipe';

@@ -33,11 +33,12 @@ import {
   DeletedBillListFiltersDto,
   CreatedBillDto,
   RestoredBillDto,
+  AllBillListFiltersDto,
 } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 import { DissimilarRolesGuard, JwtGuard, RolesGuard, SameRolesGuard } from 'src/guards';
 import { BillService } from 'src/services';
-import { ParseBillListFiltersPipe } from 'src/pipes';
+import { ParseAllBillListFiltersPipe, ParseBillListFiltersPipe } from 'src/pipes';
 import {
   BillsSerializerInterceptor,
   BillSerializerInterceptor,
@@ -172,7 +173,7 @@ export class BillController {
   @UseInterceptors(BillsSerializerInterceptor)
   @ApiQuery({ name: 'page', type: 'number' })
   @ApiQuery({ name: 'take', type: 'number' })
-  @ApiQuery({ name: 'filters', type: BillListFiltersDto })
+  @ApiQuery({ name: 'filters', type: AllBillListFiltersDto })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: BillDto, isArray: true })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
@@ -180,7 +181,7 @@ export class BillController {
   findAll(
     @Query('page', ParseIntPipe) page: number,
     @Query('take', ParseIntPipe) take: number,
-    @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
+    @Query('filters', ParseAllBillListFiltersPipe) filters: AllBillListFiltersDto,
   ): Promise<[Bill[], number]> {
     return this.billService.findAll(page, take, filters);
   }

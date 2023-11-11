@@ -17,7 +17,7 @@ import {
   BillQuantitiesDto,
   BillListFiltersDto,
   DeletedBillListFiltersDto,
-  UpdatedBillDto,
+  AllBillListFiltersDto,
 } from 'src/dtos';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, User } from '../entities';
@@ -98,7 +98,7 @@ export class BillService {
       .getOneOrFail();
   }
 
-  async findAll(page: number, take: number, filters: BillListFiltersDto): Promise<[Bill[], number]> {
+  async findAll(page: number, take: number, filters: AllBillListFiltersDto): Promise<[Bill[], number]> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -117,6 +117,7 @@ export class BillService {
             .orWhere("user.lastName ILIKE '%' || :q || '%'"),
         ),
       )
+      .andWhere('user.role = ANY(:roles)')
       .andWhere(
         'CASE WHEN (:fromDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:fromDate)::BIGINT ELSE TRUE END',
       )
@@ -128,6 +129,7 @@ export class BillService {
       .skip((page - 1) * take)
       .setParameters({
         q: filters.q,
+        roles: filters.roles,
         fromDate: filters.fromDate,
         toDate: filters.toDate,
       })
