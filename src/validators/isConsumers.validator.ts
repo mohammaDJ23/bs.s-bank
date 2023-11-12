@@ -3,6 +3,9 @@ import { ValidationArguments, ValidatorConstraint, ValidatorConstraintInterface 
 @ValidatorConstraint()
 export class IsConsumers implements ValidatorConstraintInterface {
   public async validate(data: string[], args: ValidationArguments) {
-    return Array.isArray(data) && data.every((item) => item.length < 100);
+    return (
+      Array.isArray(data) &&
+      data.every((item) => item.length < 100 && item.match(/^[a-zA-Z_]+( [a-zA-Z_]+)*$/))
+    );
   }
 }
