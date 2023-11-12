@@ -12,6 +12,7 @@ import {
   BillController,
   BillCronJobsController,
   ConsumerController,
+  ReceiverController,
   UserController,
   UserMessagePatternController,
 } from '../controllers';
@@ -89,6 +90,7 @@ import {
     UserController,
     UserMessagePatternController,
     ConsumerController,
+    ReceiverController,
   ],
   providers: [
     UserService,

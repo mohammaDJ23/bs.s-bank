@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, Receiver, User } from '../entities';
-import { RecevierListFiltersDto } from 'src/dtos';
+import { ReceiverListFiltersDto } from 'src/dtos';
 
 @Injectable()
 export class ReceiverService {
@@ -14,7 +14,7 @@ export class ReceiverService {
       .where('receiver.name = :receiver')
       .andWhere('receiver.user_id = :userId')
       .setParameters({ receiver: payload.receiver, userId: user.id })
-      .getMany();
+      .getOne();
     if (!findedReceiver) {
       const newReceiver = manager.create(Receiver, { name: payload.receiver, user });
       await manager.createQueryBuilder().insert().orIgnore(true).into(Receiver).values(newReceiver).execute();
@@ -24,7 +24,7 @@ export class ReceiverService {
   findAll(
     page: number,
     take: number,
-    filters: RecevierListFiltersDto,
+    filters: ReceiverListFiltersDto,
     user: User,
   ): Promise<[Receiver[], number]> {
     return this.receiverRepository
