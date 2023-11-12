@@ -163,7 +163,7 @@ export class BillService {
       .andWhere(
         'CASE WHEN (:toDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:toDate)::BIGINT ELSE TRUE END',
       )
-      .orderBy('bill.date', 'DESC')
+      .orderBy('bill.createdAt', 'DESC')
       .take(take)
       .skip((page - 1) * take)
       .setParameters({
@@ -317,7 +317,7 @@ export class BillService {
     const bills = await this.billRepository
       .createQueryBuilder('bill')
       .where('bill.user_id = :userId')
-      .orderBy('bill.date', 'DESC')
+      .orderBy('bill.createdAt', 'DESC')
       .setParameters({ userId: user.id })
       .getMany();
     if (bills.length) {
