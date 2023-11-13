@@ -38,7 +38,7 @@ import {
 import { Bill, User } from 'src/entities';
 import { DissimilarRolesGuard, JwtGuard, RolesGuard, SameRolesGuard } from 'src/guards';
 import { BillService } from 'src/services';
-import { ParseAllBillListFiltersPipe } from 'src/pipes';
+import { ParseAllBillListFiltersPipe, ParseBillListFiltersPipe } from 'src/pipes';
 import {
   BillsSerializerInterceptor,
   BillSerializerInterceptor,
@@ -199,7 +199,7 @@ export class BillController {
   findAllByUserId(
     @Query('page', ParseIntPipe) page: number,
     @Query('take', ParseIntPipe) take: number,
-    @Query('filters') filters: BillListFiltersDto,
+    @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
     return this.billService.findAllByUserId(page, take, filters, user);
@@ -218,7 +218,7 @@ export class BillController {
   findAllDeleted(
     @Query('page', ParseIntPipe) page: number,
     @Query('take', ParseIntPipe) take: number,
-    @Query('filters')
+    @Query('filters', ParseBillListFiltersPipe)
     filters: DeletedBillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
