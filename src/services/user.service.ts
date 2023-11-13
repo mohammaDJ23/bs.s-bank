@@ -2,14 +2,6 @@ import { ConflictException, Inject, Injectable, NotFoundException, forwardRef } 
 import { RmqContext, RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserWithBillInfoDto } from 'src/dtos';
-import {
-  CreatedUserObj,
-  DeletedUserObj,
-  RestoredUserWithBillsObj,
-  RestoredUserObj,
-  UpdatedUserObj,
-  DeletedUserWithBillsObj,
-} from 'src/types';
 import { EntityManager, Repository } from 'typeorm';
 import { User } from '../entities';
 import { RabbitmqService } from './rabbitmq.service';
@@ -39,27 +31,27 @@ export class UserService {
     return this.userRepository.createQueryBuilder('user').where('user.id = :id', { id }).getOneOrFail();
   }
 
-  async createWithEntityManager(createdUser: User, entityManager: EntityManager) {
-    let findedUser = await entityManager
+  async createWithEntityManager(manager: EntityManager, payload: User, user: User) {
+    let findedUser = await manager
       .createQueryBuilder(User, 'public.user')
       .withDeleted()
-      .where('public.user.email = :email', { email: createdUser.email })
+      .where('public.user.email = :email', { email: payload.email })
       .getOne();
 
     if (findedUser) throw new ConflictException('The user already exist.');
 
-    return entityManager
+    return manager
       .createQueryBuilder()
       .insert()
       .into(User)
-      .values(createdUser)
+      .values(payload)
       .returning('*')
       .exe({ noEffectError: 'Could not create the user.' });
   }
 
-  async create(payload: CreatedUserObj, context: RmqContext): Promise<User> {
+  async create(context: RmqContext, payload: User, user: User): Promise<User> {
     try {
-      const result = await this.createUserTransaction.run(payload);
+      const result = await this.createUserTransaction.run(payload, user);
       this.rabbitmqService.applyAcknowledgment(context);
       return result;
     } catch (error) {
@@ -67,28 +59,21 @@ export class UserService {
     }
   }
 
-  updateWithEntityManager(updatedUser: User, currentUser: User, entityManager: EntityManager) {
-    return entityManager
+  updateWithEntityManager(manager: EntityManager, payload: User, user: User) {
+    const newUser = manager.create(User, payload);
+    return manager
       .createQueryBuilder(User, 'public.user')
       .update()
-      .set({
-        email: updatedUser.email,
-        firstName: updatedUser.firstName,
-        lastName: updatedUser.lastName,
-        password: updatedUser.password,
-        phone: updatedUser.phone,
-        role: updatedUser.role,
-        updatedAt: new Date(updatedUser.updatedAt),
-      })
-      .where('public.user.id = :userId')
-      .setParameters({ userId: updatedUser.id })
+      .set(newUser)
+      .where('public.user.id = :id')
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ noEffectError: 'Could not update the user.' });
   }
 
-  async update(payload: UpdatedUserObj, context: RmqContext): Promise<User> {
+  async update(context: RmqContext, payload: User, user: User): Promise<User> {
     try {
-      const result = await this.updateUserTransaction.run(payload);
+      const result = await this.updateUserTransaction.run(payload, user);
       this.rabbitmqService.applyAcknowledgment(context);
       return result;
     } catch (error) {
@@ -96,25 +81,20 @@ export class UserService {
     }
   }
 
-  async deleteWithEntityManager(
-    deletedUserId: number,
-    currentUserId: number,
-    entityManager: EntityManager,
-  ): Promise<User> {
-    return entityManager
+  async deleteWithEntityManager(manager: EntityManager, payload: User, user: User): Promise<User> {
+    return manager
       .createQueryBuilder(User, 'public.user')
       .softDelete()
-      .where('public.user.id = :deletedUserId')
+      .where('public.user.id = :id')
       .andWhere('public.user.deleted_at IS NULL')
-      .andWhere('public.user.created_by = :currentUserId')
-      .setParameters({ deletedUserId, currentUserId })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ noEffectError: 'Could not delete the user.' });
   }
 
-  async delete(payload: DeletedUserObj, context: RmqContext): Promise<DeletedUserWithBillsObj> {
+  async delete(context: RmqContext, payload: User, user: User): Promise<User> {
     try {
-      const result = await this.deleteUserTransaction.run(payload);
+      const result = await this.deleteUserTransaction.run(payload, user);
       this.rabbitmqService.applyAcknowledgment(context);
       return result;
     } catch (error) {
@@ -175,25 +155,20 @@ export class UserService {
     return response;
   }
 
-  async restoreWithEntityManager(
-    restoredUserId: number,
-    currentUserId: number,
-    entityManager: EntityManager,
-  ): Promise<User> {
-    return entityManager
+  async restoreWithEntityManager(manager: EntityManager, payload: User, user: User): Promise<User> {
+    return manager
       .createQueryBuilder(User, 'public.user')
       .restore()
-      .where('public.user.id = :restoredUserId')
+      .where('public.user.id = :id')
       .andWhere('public.user.deleted_at IS NOT NULL')
-      .andWhere('public.user.created_by = :currentUserId')
-      .setParameters({ restoredUserId, currentUserId })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ noEffectError: 'Could not restore the user.' });
   }
 
-  async restore(payload: RestoredUserObj, context: RmqContext): Promise<RestoredUserWithBillsObj> {
+  async restore(context: RmqContext, payload: User, user: User): Promise<User> {
     try {
-      const result = await this.restoreUserTransaction.run(payload);
+      const result = await this.restoreUserTransaction.run(payload, user);
       this.rabbitmqService.applyAcknowledgment(context);
       return result;
     } catch (error) {

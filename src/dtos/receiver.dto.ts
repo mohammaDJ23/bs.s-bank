@@ -1,30 +1,14 @@
 import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class DeletedBillDto {
+export class ReceiverDto {
   @Expose()
   @ApiProperty()
   id: string;
 
   @Expose()
   @ApiProperty()
-  amount: string;
-
-  @Expose()
-  @ApiProperty()
-  receiver: string;
-
-  @Expose()
-  @ApiProperty()
-  consumers: string[];
-
-  @Expose()
-  @ApiProperty()
-  description: string;
-
-  @Expose()
-  @ApiProperty()
-  date: Date;
+  name: string;
 
   @Expose()
   @ApiProperty()
@@ -37,8 +21,4 @@ export class DeletedBillDto {
   @Expose()
   @ApiProperty()
   deletedAt: Date;
-
-  @Expose()
-  @ApiProperty()
-  userId: number;
 }

@@ -1,4 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  StreamableFile,
+  forwardRef,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
   LastWeekDto,
@@ -10,6 +17,7 @@ import {
   BillQuantitiesDto,
   BillListFiltersDto,
   DeletedBillListFiltersDto,
+  AllBillListFiltersDto,
 } from 'src/dtos';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, User } from '../entities';
@@ -18,45 +26,53 @@ import { mkdir } from 'fs/promises';
 import { join } from 'path';
 import { Workbook } from 'exceljs';
 import { UserService } from './user.service';
+import { CreateBillTransaction, UpdateBillTransaction } from 'src/transactions';
 
 @Injectable()
 export class BillService {
   constructor(
     @InjectRepository(Bill) private readonly billRepository: Repository<Bill>,
     private readonly userService: UserService,
+    @Inject(forwardRef(() => CreateBillTransaction))
+    private readonly createBillTransaction: CreateBillTransaction,
+    @Inject(forwardRef(() => UpdateBillTransaction))
+    private readonly updateBillTransaction: UpdateBillTransaction,
   ) {}
 
-  async create(body: CreateBillDto, user: User): Promise<Bill> {
-    const createdBill = this.billRepository.create(body);
+  createWithEntityManager(manager: EntityManager, payload: CreateBillDto, user: User): Promise<Bill> {
+    const createdBill = manager.create(Bill, payload);
     createdBill.user = user;
-    return this.billRepository
-      .createQueryBuilder()
-      .insert()
-      .into(Bill)
-      .values(createdBill)
-      .returning('*')
-      .exe();
+    return manager.createQueryBuilder().insert().into(Bill).values(createdBill).returning('*').exe();
   }
 
-  async update(body: UpdateBillDto, user: User): Promise<Bill> {
-    return this.billRepository
-      .createQueryBuilder('bill')
+  async create(payload: CreateBillDto, user: User): Promise<Bill> {
+    return this.createBillTransaction.run(payload, user);
+  }
+
+  updateWithEntityManager(manager: EntityManager, payload: UpdateBillDto, user: User): Promise<Bill> {
+    return manager
+      .createQueryBuilder(Bill, 'bill')
+      .leftJoinAndSelect('bill.user', 'user')
       .update(Bill)
-      .set(body)
+      .set(payload)
       .where('bill.user_id = :userId')
       .andWhere('bill.id = :billId')
-      .setParameters({ userId: user.id, billId: body.id })
+      .setParameters({ userId: user.id, billId: payload.id })
       .returning('*')
       .exe();
   }
 
-  async deleteManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
-    return entityManager
+  async update(payload: UpdateBillDto, user: User): Promise<Bill> {
+    return this.updateBillTransaction.run(payload, user);
+  }
+
+  async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<Bill[]> {
+    return manager
       .createQueryBuilder(Bill, 'bill')
       .softDelete()
-      .where('bill.user_id = :userId')
+      .where('bill.user_id = :id')
       .andWhere('bill.deleted_at IS NULL')
-      .setParameters({ userId: id })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ resultType: 'array' });
   }
@@ -82,7 +98,45 @@ export class BillService {
       .getOneOrFail();
   }
 
-  async findAll(
+  async findAll(page: number, take: number, filters: AllBillListFiltersDto): Promise<[Bill[], number]> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .leftJoinAndSelect('bill.user', 'user')
+      .where(
+        new Brackets((query) =>
+          query
+            .where('to_tsvector(bill.receiver) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(bill.description) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(bill.amount) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(user.firstName) @@ plainto_tsquery(:q)')
+            .orWhere('to_tsvector(user.lastName) @@ plainto_tsquery(:q)')
+            .orWhere("bill.receiver ILIKE '%' || :q || '%'")
+            .orWhere("bill.description ILIKE '%' || :q || '%'")
+            .orWhere("bill.amount ILIKE '%' || :q || '%'")
+            .orWhere("user.firstName ILIKE '%' || :q || '%'")
+            .orWhere("user.lastName ILIKE '%' || :q || '%'"),
+        ),
+      )
+      .andWhere('user.role = ANY(:roles)')
+      .andWhere(
+        'CASE WHEN (:fromDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:fromDate)::BIGINT ELSE TRUE END',
+      )
+      .andWhere(
+        'CASE WHEN (:toDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:toDate)::BIGINT ELSE TRUE END',
+      )
+      .orderBy('bill.createdAt', 'DESC')
+      .take(take)
+      .skip((page - 1) * take)
+      .setParameters({
+        q: filters.q,
+        roles: filters.roles,
+        fromDate: filters.fromDate,
+        toDate: filters.toDate,
+      })
+      .getManyAndCount();
+  }
+
+  async findAllByUserId(
     page: number,
     take: number,
     filters: BillListFiltersDto,
@@ -109,7 +163,7 @@ export class BillService {
       .andWhere(
         'CASE WHEN (:toDate)::BIGINT > 0 THEN COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:toDate)::BIGINT ELSE TRUE END',
       )
-      .orderBy('bill.date', 'DESC')
+      .orderBy('bill.createdAt', 'DESC')
       .take(take)
       .skip((page - 1) * take)
       .setParameters({
@@ -178,7 +232,7 @@ export class BillService {
       .getRawOne();
   }
 
-  async periodAmount(body: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
+  async periodAmount(payload: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
@@ -189,8 +243,8 @@ export class BillService {
       .andWhere('bill.date::TIMESTAMP <= :end::TIMESTAMP')
       .setParameters({
         userId: user.id,
-        start: new Date(body.start),
-        end: new Date(body.end),
+        start: new Date(payload.start),
+        end: new Date(payload.end),
       })
       .getRawOne();
   }
@@ -263,7 +317,7 @@ export class BillService {
     const bills = await this.billRepository
       .createQueryBuilder('bill')
       .where('bill.user_id = :userId')
-      .orderBy('bill.date', 'DESC')
+      .orderBy('bill.createdAt', 'DESC')
       .setParameters({ userId: user.id })
       .getMany();
     if (bills.length) {
@@ -303,13 +357,13 @@ export class BillService {
       });
   }
 
-  async restoreManyWithEntityManager(id: number, entityManager: EntityManager): Promise<Bill[]> {
-    return entityManager
+  async restoreManyWithEntityManager(manager: EntityManager, payload: User): Promise<Bill[]> {
+    return manager
       .createQueryBuilder(Bill, 'bill')
       .restore()
-      .where('bill.user_id = :userId')
+      .where('bill.user_id = :id')
       .andWhere('bill.deleted_at IS NOT NULL')
-      .setParameters({ userId: id })
+      .setParameters({ id: payload.id })
       .returning('*')
       .exe({ resultType: 'array' });
   }

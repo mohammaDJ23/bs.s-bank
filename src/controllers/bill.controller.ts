@@ -16,7 +16,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiBody, ApiTags, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { CurrentUser, Roles, SameUser } from 'src/decorators';
+import { CurrentUser, DissimilarRoles, Roles, SameRoles } from 'src/decorators';
 import {
   BillDto,
   CreateBillDto,
@@ -33,11 +33,12 @@ import {
   DeletedBillListFiltersDto,
   CreatedBillDto,
   RestoredBillDto,
+  AllBillListFiltersDto,
 } from 'src/dtos';
 import { Bill, User } from 'src/entities';
-import { DifferentOwnerGuard, JwtGuard, RolesGuard, SameUserGuard } from 'src/guards';
+import { DissimilarRolesGuard, JwtGuard, RolesGuard, SameRolesGuard } from 'src/guards';
 import { BillService } from 'src/services';
-import { ParseBillListFiltersPipe } from 'src/pipes';
+import { ParseAllBillListFiltersPipe, ParseBillListFiltersPipe } from 'src/pipes';
 import {
   BillsSerializerInterceptor,
   BillSerializerInterceptor,
@@ -151,8 +152,9 @@ export class BillController {
 
   @Get('bill/excel')
   @HttpCode(HttpStatus.OK)
-  @SameUser(UserRoles.ADMIN, UserRoles.USER)
-  @UseGuards(SameUserGuard, DifferentOwnerGuard)
+  @SameRoles(UserRoles.ADMIN, UserRoles.USER)
+  @DissimilarRoles(UserRoles.OWNER)
+  @UseGuards(SameRolesGuard, DissimilarRolesGuard)
   @ApiQuery({ name: 'id', type: 'number' })
   @Header('Content-Type', 'application/json')
   @Header('Content-Disposition', 'attachment; filename="bill-reports.xlsx"')
@@ -162,6 +164,26 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   report(@Query('id') id: number): Promise<StreamableFile> {
     return this.billService.report(id);
+  }
+
+  @Get('owner/bill/all')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRoles.OWNER)
+  @UseGuards(RolesGuard)
+  @UseInterceptors(BillsSerializerInterceptor)
+  @ApiQuery({ name: 'page', type: 'number' })
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiQuery({ name: 'filters', type: AllBillListFiltersDto })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: BillDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findAll(
+    @Query('page', ParseIntPipe) page: number,
+    @Query('take', ParseIntPipe) take: number,
+    @Query('filters', ParseAllBillListFiltersPipe) filters: AllBillListFiltersDto,
+  ): Promise<[Bill[], number]> {
+    return this.billService.findAll(page, take, filters);
   }
 
   @Get('bill/all')
@@ -174,13 +196,13 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.OK, type: BillDto, isArray: true })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  findAll(
+  findAllByUserId(
     @Query('page', ParseIntPipe) page: number,
     @Query('take', ParseIntPipe) take: number,
     @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
-    return this.billService.findAll(page, take, filters, user);
+    return this.billService.findAllByUserId(page, take, filters, user);
   }
 
   @Get('bill/all/deleted')
@@ -216,7 +238,7 @@ export class BillController {
     return this.billService.findById(id, user);
   }
 
-  @Get('bill/:id/deleted')
+  @Get('bill/deleted/:id')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(CacheInterceptor, DeletedBillSerializerInterceptor)
   @ApiParam({ name: 'id', type: 'string' })
@@ -229,7 +251,7 @@ export class BillController {
     return this.billService.findByIdDeleted(id, user);
   }
 
-  @Post('bill/:id/restore')
+  @Post('bill/restore/:id')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(ResetCacheInterceptor, RestoredBillSerializerInterceptor)
   @ApiParam({ name: 'id', type: 'string' })

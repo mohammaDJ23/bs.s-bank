@@ -21,6 +21,9 @@ export class Bill {
   @Column({ type: 'varchar', length: 100 })
   receiver: string;
 
+  @Column({ type: 'varchar', length: 100, array: true })
+  consumers: string[];
+
   @Column({ type: 'varchar', length: 500 })
   description: string;
 
