@@ -150,19 +150,19 @@ export class BillController {
     return this.billService.lastWeek(user);
   }
 
-  @Get('bill/excel')
+  @Get('bill/excel/:id')
   @HttpCode(HttpStatus.OK)
   @SameRoles(UserRoles.ADMIN, UserRoles.USER)
   @DissimilarRoles(UserRoles.OWNER)
   @UseGuards(SameRolesGuard, DissimilarRolesGuard)
-  @ApiQuery({ name: 'id', type: 'number' })
+  @ApiParam({ name: 'id', type: 'number' })
   @Header('Content-Type', 'application/json')
   @Header('Content-Disposition', 'attachment; filename="bill-reports.xlsx"')
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: StreamableFile })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  report(@Query('id') id: number): Promise<StreamableFile> {
+  report(@Param('id') id: number): Promise<StreamableFile> {
     return this.billService.report(id);
   }
 

@@ -15,10 +15,10 @@ export class SameRolesGuard implements CanActivate {
   constructor(private reflector: Reflector, private userService: UserService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRoles = this.reflector.getAllAndOverride<UserRoles[]>(
-      'same-roles',
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredRoles = this.reflector.getAllAndOverride<UserRoles[]>('same-roles', [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredRoles) {
       return true;
