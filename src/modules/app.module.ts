@@ -7,7 +7,6 @@ import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
 import { Bill, Consumer, Receiver, User } from '../entities';
-import { AllExceptionFilter } from '../filters';
 import {
   BillController,
   BillCronJobsController,
@@ -28,6 +27,13 @@ import {
   UpdateBillTransaction,
   UpdateUserTransaction,
 } from 'src/transactions';
+import {
+  AllExceptionFilter,
+  HttpExceptionFilter,
+  ObjectExceptionFilter,
+  QueryExceptionFilter,
+  RpcExceptionFilter,
+} from 'src/filters';
 
 @Module({
   imports: [
@@ -104,6 +110,10 @@ import {
     CreateBillTransaction,
     UpdateBillTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
+    { provide: APP_FILTER, useClass: ObjectExceptionFilter },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_FILTER, useClass: RpcExceptionFilter },
+    { provide: APP_FILTER, useClass: QueryExceptionFilter },
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({
