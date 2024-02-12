@@ -1,5 +1,6 @@
-import { Expose, Transform } from 'class-transformer';
+import { Expose, Transform, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
+import { UserDto } from './user.dto';
 
 export class BillDto {
   @Expose()
@@ -13,6 +14,10 @@ export class BillDto {
   @Expose()
   @ApiProperty()
   receiver: string;
+
+  @Expose()
+  @ApiProperty()
+  consumers: string[];
 
   @Expose()
   @ApiProperty()
@@ -38,4 +43,9 @@ export class BillDto {
   @Expose()
   @ApiProperty()
   userId: number;
+
+  @Expose()
+  @ApiProperty()
+  @Type(() => UserDto)
+  user: UserDto;
 }

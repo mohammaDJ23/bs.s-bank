@@ -9,9 +9,9 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
-import { SameUser } from 'src/decorators';
+import { SameRoles } from 'src/decorators';
 import { ErrorDto, UserWithBillInfoDto } from 'src/dtos';
-import { JwtGuard, SameUserGuard } from 'src/guards';
+import { JwtGuard, SameRolesGuard } from 'src/guards';
 import { UserService } from 'src/services';
 import { UserWithBillInfoSerializerInterceptor, CacheInterceptor } from 'src/interceptors';
 import { UserRoles } from 'src/types';
@@ -24,8 +24,8 @@ export class UserController {
 
   @Get('user/:id')
   @HttpCode(HttpStatus.OK)
-  @SameUser(UserRoles.USER)
-  @UseGuards(SameUserGuard)
+  @SameRoles(UserRoles.USER)
+  @UseGuards(SameRolesGuard)
   @UseInterceptors(CacheInterceptor, UserWithBillInfoSerializerInterceptor)
   @ApiParam({ name: 'id', type: 'number' })
   @ApiBearerAuth()

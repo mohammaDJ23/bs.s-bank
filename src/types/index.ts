@@ -1,8 +1,13 @@
 import { Request as Req } from 'express';
+import { CreateBillDto, UpdateBillDto } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 
 export interface CurrentUserObj {
   currentUser: User;
+}
+
+export interface UserObj {
+  user: User;
 }
 
 export interface Request extends Req, CurrentUserObj {}
@@ -70,20 +75,20 @@ export interface CacheKeyRoles {
   type: CacheKeyTypes;
 }
 
-export interface CreatedUserObj extends CurrentUserObj {
-  createdUser: User;
+export interface CreatedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface UpdatedUserObj extends CurrentUserObj {
-  updatedUser: User;
+export interface UpdatedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface DeletedUserObj extends CurrentUserObj {
-  deletedUser: User;
+export interface DeletedUserObj extends UserObj {
+  payload: User;
 }
 
-export interface RestoredUserObj extends CurrentUserObj {
-  restoredUser: User;
+export interface RestoredUserObj extends UserObj {
+  payload: User;
 }
 
 export interface RestoredBillsObj {
@@ -94,6 +99,12 @@ export interface DeletedBillsObj {
   deletedBills: Bill[];
 }
 
-export interface RestoredUserWithBillsObj extends Pick<RestoredUserObj, 'restoredUser'>, RestoredBillsObj {}
+export interface CreateBillObj {
+  payload: CreateBillDto;
+  user: User;
+}
 
-export interface DeletedUserWithBillsObj extends Pick<DeletedUserObj, 'deletedUser'>, DeletedBillsObj {}
+export interface UpdateBillObj {
+  payload: UpdateBillDto;
+  user: User;
+}
