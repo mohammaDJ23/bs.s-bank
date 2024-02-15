@@ -268,7 +268,7 @@ export class BillService {
           COUNT(bill.id)::INTEGER as count
         FROM lastWeek
         FULL JOIN bill ON
-          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.date, 'YYYY-MM-DD') AND 
+          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND 
             bill.user_id = $1 AND 
             bill.deleted_at IS NULL
         WHERE lastWeek.date IS NOT NULL
