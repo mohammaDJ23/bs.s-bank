@@ -17,10 +17,7 @@ import { ClassConstructor } from 'src/types';
 export class ObjectSerializerInterceptor implements NestInterceptor {
   constructor(private dto: ClassConstructor) {}
 
-  intercept(
-    context: ExecutionContext,
-    handler: CallHandler,
-  ): Observable<object> {
+  intercept(context: ExecutionContext, handler: CallHandler): Observable<object> {
     return handler.handle().pipe(
       map((data: object) => {
         return this.plainToClass(data);
