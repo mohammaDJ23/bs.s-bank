@@ -49,4 +49,10 @@ export class UpdateBillDto {
   @IsNumber()
   @ApiProperty()
   date: number | null;
+
+  @IsString()
+  @Length(3, 100)
+  @Matches(/^[a-zA-Z_]+( [a-zA-Z_]+)*$/, { message: 'Invalid location.' })
+  @ApiProperty()
+  location: string;
 }

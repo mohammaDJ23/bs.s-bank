@@ -1,5 +1,5 @@
 import { Inject, Injectable, forwardRef } from '@nestjs/common';
-import { BillService, ConsumerService, ReceiverService } from 'src/services';
+import { BillService, ConsumerService, LocationService, ReceiverService } from 'src/services';
 import { DataSource, EntityManager } from 'typeorm';
 import { BaseTransaction } from './base.transaction';
 import { Bill, User } from 'src/entities';
@@ -15,6 +15,8 @@ export class CreateBillTransaction extends BaseTransaction {
     private readonly consumerService: ConsumerService,
     @Inject(forwardRef(() => ReceiverService))
     private readonly receiverService: ReceiverService,
+    @Inject(forwardRef(() => LocationService))
+    private readonly locationService: LocationService,
   ) {
     super(dataSource);
   }
@@ -23,6 +25,7 @@ export class CreateBillTransaction extends BaseTransaction {
     const createdBill = await this.billService.createWithEntityManager(manager, payload, user);
     await this.consumerService.createWithEntityManager(manager, createdBill, user);
     await this.receiverService.createWithEntityManager(manager, createdBill, user);
+    await this.locationService.createWithEntityManager(manager, createdBill, user);
     return createdBill;
   }
 }

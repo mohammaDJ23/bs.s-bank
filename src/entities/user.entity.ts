@@ -59,6 +59,9 @@ export class User {
   @OneToMany(() => Receiver, (receiver) => receiver.user, { cascade: true })
   receivers: Receiver[];
 
+  @OneToMany(() => Receiver, (receiver) => receiver.user, { cascade: true })
+  locations: Receiver[];
+
   @OneToMany(() => User, (user) => user.parent)
   users: User[];
 
