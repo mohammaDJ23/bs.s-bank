@@ -16,6 +16,10 @@ export class UpdatedBillDto {
 
   @Expose()
   @ApiProperty()
+  location: string;
+
+  @Expose()
+  @ApiProperty()
   consumers: string[];
 
   @Expose()

@@ -6,17 +6,25 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { Bill, Consumer, Receiver, User } from '../entities';
+import { Bill, Consumer, Location, Receiver, User } from '../entities';
 import {
   BillController,
   BillCronJobsController,
   ConsumerController,
+  LocationController,
   ReceiverController,
   UserController,
   UserMessagePatternController,
 } from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
-import { BillService, UserService, RabbitmqService, ConsumerService, ReceiverService } from 'src/services';
+import {
+  BillService,
+  UserService,
+  RabbitmqService,
+  ConsumerService,
+  ReceiverService,
+  LocationService,
+} from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import {
@@ -73,11 +81,11 @@ import {
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE_NAME,
         namingStrategy: new CustomNamingStrategy(),
-        entities: [Bill, User, Consumer, Receiver],
+        entities: [Bill, User, Consumer, Receiver, Location],
         synchronize: true,
       }),
     }),
-    TypeOrmModule.forFeature([Bill, User, Consumer, Receiver]),
+    TypeOrmModule.forFeature([Bill, User, Consumer, Receiver, Location]),
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV}`,
       isGlobal: true,
@@ -95,6 +103,7 @@ import {
     UserMessagePatternController,
     ConsumerController,
     ReceiverController,
+    LocationController,
   ],
   providers: [
     UserService,
@@ -103,6 +112,7 @@ import {
     RabbitmqService,
     ConsumerService,
     ReceiverService,
+    LocationService,
     CreateUserTransaction,
     UpdateUserTransaction,
     RestoreUserTransaction,
