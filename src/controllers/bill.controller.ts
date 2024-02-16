@@ -111,17 +111,16 @@ export class BillController {
     return this.billService.totalAmount(user);
   }
 
-  @Get('bill/quantities')
+  @Get('bill/deleted-quantities')
   @HttpCode(HttpStatus.OK)
-  @Roles(UserRoles.OWNER, UserRoles.ADMIN)
   @UseGuards(RolesGuard)
   @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  quantities(): Promise<BillQuantitiesDto> {
-    return this.billService.quantities();
+  quantitiesDeleted(@CurrentUser() user: User): Promise<BillQuantitiesDto> {
+    return this.billService.quantitiesDeleted(user);
   }
 
   @Post('bill/period-amount')
@@ -203,6 +202,32 @@ export class BillController {
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
     return this.billService.findAllByUserId(page, take, filters, user);
+  }
+
+  @Get('bill/all/quantities')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRoles.OWNER, UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  quantities(): Promise<BillQuantitiesDto> {
+    return this.billService.allQuantities();
+  }
+
+  @Get('bill/all/deleted-quantities')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRoles.OWNER, UserRoles.ADMIN)
+  @UseGuards(RolesGuard)
+  @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  allQuantitiesDeleted(): Promise<BillQuantitiesDto> {
+    return this.billService.allQuantitiesDeleted();
   }
 
   @Get('bill/all/deleted')
