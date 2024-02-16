@@ -279,11 +279,33 @@ export class BillService {
     );
   }
 
-  quantities(): Promise<BillQuantitiesDto> {
+  allQuantities(): Promise<BillQuantitiesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .select('COUNT(bill.id)::TEXT', 'quantities')
       .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .getRawOne();
+  }
+
+  allQuantitiesDeleted(): Promise<BillQuantitiesDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COUNT(bill.id)::TEXT', 'quantities')
+      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .getRawOne();
+  }
+
+  quantitiesDeleted(user: User): Promise<BillQuantitiesDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COUNT(bill.id)::TEXT', 'quantities')
+      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .andWhere('bill.user_id = :userId')
+      .setParameters({ userId: user.id })
       .getRawOne();
   }
 
