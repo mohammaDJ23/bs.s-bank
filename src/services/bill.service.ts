@@ -279,7 +279,7 @@ export class BillService {
             NOW()::timestamp,
             '1 day'::interval
           ) as t(day)
-        )
+        ) 
         SELECT
           COALESCE(EXTRACT(EPOCH FROM lastWeek.date) * 1000, 0)::BIGINT AS date,
           COALESCE(SUM(bill.amount::BIGINT), 0)::BIGINT AS amount,
