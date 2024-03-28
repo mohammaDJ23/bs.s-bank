@@ -19,6 +19,14 @@ export class TotalAmountDto {
   @Expose()
   @ApiProperty()
   quantities: string;
+
+  @Expose()
+  @ApiProperty()
+  dateLessQuantities: string;
+
+  @Expose()
+  @ApiProperty()
+  dateLessTotalAmount: string;
 }
 
 export class TotalAmountWithoutDatesDto {
