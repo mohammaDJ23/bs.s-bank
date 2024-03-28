@@ -274,14 +274,11 @@ export class BillService {
     return this.billRepository.query(
       `
         WITH lastWeek (date) AS (
-          VALUES
-            (NOW()),
-            (NOW() - INTERVAL '1 DAY'),
-            (NOW() - INTERVAL '2 DAY'),
-            (NOW() - INTERVAL '3 DAY'),
-            (NOW() - INTERVAL '4 DAY'),
-            (NOW() - INTERVAL '5 DAY'),
-            (NOW() - INTERVAL '6 DAY')
+          SELECT t.day::date FROM generate_series(
+            (NOW() - INTERVAL '1 YEAR')::timestamp,
+            NOW()::timestamp,
+            '1 day'::interval
+          ) as t(day)
         )
         SELECT
           COALESCE(EXTRACT(EPOCH FROM lastWeek.date) * 1000, 0)::BIGINT AS date,
@@ -289,8 +286,8 @@ export class BillService {
           COUNT(bill.id)::INTEGER as count
         FROM lastWeek
         FULL JOIN bill ON
-          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND 
-            bill.user_id = $1 AND 
+          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND
+            bill.user_id = $1 AND
             bill.deleted_at IS NULL
         WHERE lastWeek.date IS NOT NULL
         GROUP BY lastWeek.date
