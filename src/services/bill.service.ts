@@ -219,15 +219,36 @@ export class BillService {
       .getManyAndCount();
   }
 
-  async totalAmount(user: User): Promise<TotalAmountDto> {
+  totalAmount(user: User): Promise<TotalAmountDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
+      .addSelect(
+        (qb) =>
+          qb
+            .select('COALESCE(COUNT(bill.id), 0)', 'dateLessQuantities')
+            .from(Bill, 'bill')
+            .leftJoin('bill.user', 'user')
+            .where('user.id = :userId')
+            .andWhere('bill.date IS NULL'),
+        'dateLessQuantities',
+      )
+      .addSelect(
+        (qb) =>
+          qb
+            .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'dateLessTotalAmount')
+            .from(Bill, 'bill')
+            .leftJoin('bill.user', 'user')
+            .where('user.id = :userId')
+            .andWhere('bill.date IS NULL'),
+        'dateLessTotalAmount',
+      )
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
       .where('user.id = :userId')
+      .andWhere('bill.date IS NOT NULL')
       .setParameters({ userId: user.id })
       .getRawOne();
   }
@@ -239,12 +260,12 @@ export class BillService {
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
       .where('user.id = :userId')
-      .andWhere('bill.date::TIMESTAMP >= :start::TIMESTAMP')
-      .andWhere('bill.date::TIMESTAMP <= :end::TIMESTAMP')
+      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:start)::BIGINT')
+      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:end)::BIGINT')
       .setParameters({
         userId: user.id,
-        start: new Date(payload.start),
-        end: new Date(payload.end),
+        start: payload.start,
+        end: payload.end,
       })
       .getRawOne();
   }
