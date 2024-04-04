@@ -21,6 +21,9 @@ export class Bill {
   @Column({ type: 'varchar', length: 100 })
   receiver: string;
 
+  @Column({ type: 'varchar', length: 100 })
+  location: string;
+
   @Column({ type: 'varchar', length: 100, array: true })
   consumers: string[];
 
@@ -28,17 +31,18 @@ export class Bill {
   description: string;
 
   @Column({
+    nullable: true,
     type: 'timestamptz',
     transformer: {
       from(value) {
-        return new Date(value).getTime();
+        return value ? new Date(value).getTime() : value;
       },
       to(value) {
-        return new Date(value);
+        return value ? new Date(value) : value;
       },
     },
   })
-  date: Date | number;
+  date: Date | number | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

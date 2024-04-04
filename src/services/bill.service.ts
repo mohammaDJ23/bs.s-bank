@@ -219,15 +219,36 @@ export class BillService {
       .getManyAndCount();
   }
 
-  async totalAmount(user: User): Promise<TotalAmountDto> {
+  totalAmount(user: User): Promise<TotalAmountDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .leftJoinAndSelect('bill.user', 'user')
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
+      .addSelect(
+        (qb) =>
+          qb
+            .select('COALESCE(COUNT(bill.id), 0)', 'dateLessQuantities')
+            .from(Bill, 'bill')
+            .leftJoin('bill.user', 'user')
+            .where('user.id = :userId')
+            .andWhere('bill.date IS NULL'),
+        'dateLessQuantities',
+      )
+      .addSelect(
+        (qb) =>
+          qb
+            .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'dateLessTotalAmount')
+            .from(Bill, 'bill')
+            .leftJoin('bill.user', 'user')
+            .where('user.id = :userId')
+            .andWhere('bill.date IS NULL'),
+        'dateLessTotalAmount',
+      )
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
       .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
       .where('user.id = :userId')
+      .andWhere('bill.date IS NOT NULL')
       .setParameters({ userId: user.id })
       .getRawOne();
   }
@@ -239,12 +260,12 @@ export class BillService {
       .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
       .where('user.id = :userId')
-      .andWhere('bill.date::TIMESTAMP >= :start::TIMESTAMP')
-      .andWhere('bill.date::TIMESTAMP <= :end::TIMESTAMP')
+      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:start)::BIGINT')
+      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:end)::BIGINT')
       .setParameters({
         userId: user.id,
-        start: new Date(payload.start),
-        end: new Date(payload.end),
+        start: payload.start,
+        end: payload.end,
       })
       .getRawOne();
   }
@@ -253,23 +274,20 @@ export class BillService {
     return this.billRepository.query(
       `
         WITH lastWeek (date) AS (
-          VALUES
-            (NOW()),
-            (NOW() - INTERVAL '1 DAY'),
-            (NOW() - INTERVAL '2 DAY'),
-            (NOW() - INTERVAL '3 DAY'),
-            (NOW() - INTERVAL '4 DAY'),
-            (NOW() - INTERVAL '5 DAY'),
-            (NOW() - INTERVAL '6 DAY')
-        )
+          SELECT t.day::date FROM generate_series(
+            (NOW() - INTERVAL '1 YEAR')::timestamp,
+            NOW()::timestamp,
+            '1 day'::interval
+          ) as t(day)
+        ) 
         SELECT
           COALESCE(EXTRACT(EPOCH FROM lastWeek.date) * 1000, 0)::BIGINT AS date,
           COALESCE(SUM(bill.amount::BIGINT), 0)::BIGINT AS amount,
           COUNT(bill.id)::INTEGER as count
         FROM lastWeek
         FULL JOIN bill ON
-          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.date, 'YYYY-MM-DD') AND 
-            bill.user_id = $1 AND 
+          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND
+            bill.user_id = $1 AND
             bill.deleted_at IS NULL
         WHERE lastWeek.date IS NOT NULL
         GROUP BY lastWeek.date
@@ -279,11 +297,33 @@ export class BillService {
     );
   }
 
-  quantities(): Promise<BillQuantitiesDto> {
+  allQuantities(): Promise<BillQuantitiesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
       .select('COUNT(bill.id)::TEXT', 'quantities')
       .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .getRawOne();
+  }
+
+  allQuantitiesDeleted(): Promise<BillQuantitiesDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COUNT(bill.id)::TEXT', 'quantities')
+      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .getRawOne();
+  }
+
+  quantitiesDeleted(user: User): Promise<BillQuantitiesDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COUNT(bill.id)::TEXT', 'quantities')
+      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .andWhere('bill.user_id = :userId')
+      .setParameters({ userId: user.id })
       .getRawOne();
   }
 

@@ -8,6 +8,7 @@ import {
   ArrayMaxSize,
   Validate,
   Matches,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsConsumers, IsDate, IsPositiveNumberString } from 'src/validators';
@@ -43,8 +44,15 @@ export class UpdateBillDto {
   @ApiProperty()
   description: string;
 
-  @IsNumber()
+  @ValidateIf((object, value) => !('date' in object) || value === undefined || object.date !== null)
   @Validate(IsDate, { message: 'Invalid date.' })
+  @IsNumber()
   @ApiProperty()
-  date: number;
+  date: number | null;
+
+  @IsString()
+  @Length(3, 100)
+  @Matches(/^[a-zA-Z_]+( [a-zA-Z_]+)*$/, { message: 'Invalid location.' })
+  @ApiProperty()
+  location: string;
 }

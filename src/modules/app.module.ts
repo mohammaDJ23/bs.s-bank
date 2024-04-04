@@ -6,18 +6,25 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
-import { Bill, Consumer, Receiver, User } from '../entities';
-import { AllExceptionFilter } from '../filters';
+import { Bill, Consumer, Location, Receiver, User } from '../entities';
 import {
   BillController,
   BillCronJobsController,
   ConsumerController,
+  LocationController,
   ReceiverController,
   UserController,
   UserMessagePatternController,
 } from '../controllers';
 import { JwtStrategy, CustomNamingStrategy } from '../strategies';
-import { BillService, UserService, RabbitmqService, ConsumerService, ReceiverService } from 'src/services';
+import {
+  BillService,
+  UserService,
+  RabbitmqService,
+  ConsumerService,
+  ReceiverService,
+  LocationService,
+} from 'src/services';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
 import {
@@ -28,6 +35,13 @@ import {
   UpdateBillTransaction,
   UpdateUserTransaction,
 } from 'src/transactions';
+import {
+  AllExceptionFilter,
+  HttpExceptionFilter,
+  ObjectExceptionFilter,
+  QueryExceptionFilter,
+  RpcExceptionFilter,
+} from 'src/filters';
 
 @Module({
   imports: [
@@ -35,14 +49,12 @@ import {
       useFactory: async () => ({
         isGlobal: true,
         store: await redisStore({
-          ttl: +process.env.REDIS_TTL,
           url: `redis://:${process.env.REDIS_PASSWORD}@${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
           password: process.env.REDIS_PASSWORD,
           username: 'default',
         }),
         host: process.env.REDIS_HOST,
         port: process.env.REDIS_PORT,
-        ttl: +process.env.REDIS_TTL,
       }),
     }),
     ScheduleModule.forRoot(),
@@ -69,11 +81,11 @@ import {
         password: process.env.DATABASE_PASSWORD,
         database: process.env.DATABASE_NAME,
         namingStrategy: new CustomNamingStrategy(),
-        entities: [Bill, User, Consumer, Receiver],
+        entities: [Bill, User, Consumer, Receiver, Location],
         synchronize: true,
       }),
     }),
-    TypeOrmModule.forFeature([Bill, User, Consumer, Receiver]),
+    TypeOrmModule.forFeature([Bill, User, Consumer, Receiver, Location]),
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV}`,
       isGlobal: true,
@@ -91,6 +103,7 @@ import {
     UserMessagePatternController,
     ConsumerController,
     ReceiverController,
+    LocationController,
   ],
   providers: [
     UserService,
@@ -99,6 +112,7 @@ import {
     RabbitmqService,
     ConsumerService,
     ReceiverService,
+    LocationService,
     CreateUserTransaction,
     UpdateUserTransaction,
     RestoreUserTransaction,
@@ -106,6 +120,10 @@ import {
     CreateBillTransaction,
     UpdateBillTransaction,
     { provide: APP_FILTER, useClass: AllExceptionFilter },
+    { provide: APP_FILTER, useClass: ObjectExceptionFilter },
+    { provide: APP_FILTER, useClass: HttpExceptionFilter },
+    { provide: APP_FILTER, useClass: RpcExceptionFilter },
+    { provide: APP_FILTER, useClass: QueryExceptionFilter },
     {
       provide: APP_PIPE,
       useValue: new ValidationPipe({
