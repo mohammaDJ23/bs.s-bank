@@ -357,7 +357,7 @@ export class BillService {
     const bills = await this.billRepository
       .createQueryBuilder('bill')
       .where('bill.user_id = :userId')
-      .orderBy('bill.createdAt', 'DESC')
+      .orderBy('bill.createdAt', "ASC")
       .setParameters({ userId: user.id })
       .getMany();
     if (bills.length) {
