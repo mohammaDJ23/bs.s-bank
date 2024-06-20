@@ -10,10 +10,12 @@ import {
   DefaultValuePipe,
   Param,
   Delete,
+  Put,
+  Body,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ReceiverDto, ReceiverListFiltersDto } from 'src/dtos';
+import { ErrorDto, ReceiverDto, ReceiverListFiltersDto, UpdateReceiverDto } from 'src/dtos';
 import { Receiver, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ReceiverService } from 'src/services';
@@ -46,17 +48,16 @@ export class ReceiverController {
     return this.receiverService.findAll(page, take, filters, user);
   }
 
-  @Get('receiver/:id')
+  @Put('receiver/update')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(ReceiverSerializerInterceptor)
-  @ApiParam({ name: 'id', type: 'number' })
+  @ApiBody({ type: UpdateReceiverDto })
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: ReceiverDto })
+  @ApiResponse({ status: HttpStatus.OK, type: Receiver })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
-    return this.receiverService.findById(id, user);
+  update(@Body() body: UpdateReceiverDto, @CurrentUser() user: User): Promise<Receiver> {
+    return this.receiverService.update(body, user);
   }
 
   @Delete('receiver/delete')
@@ -70,5 +71,18 @@ export class ReceiverController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
     return this.receiverService.delete(id, user);
+  }
+
+  @Get('receiver/:id')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ReceiverSerializerInterceptor)
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: ReceiverDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
+    return this.receiverService.findById(id, user);
   }
 }
