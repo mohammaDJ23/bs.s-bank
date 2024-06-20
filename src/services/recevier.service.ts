@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, Receiver, User } from '../entities';
@@ -64,7 +64,17 @@ export class ReceiverService {
       .exe();
   }
 
-  update(payload: UpdateReceiverDto, user: User): Promise<Receiver> {
+  async update(payload: UpdateReceiverDto, user: User): Promise<Receiver> {
+    const findedReceiver = await this.receiverRepository
+      .createQueryBuilder('receiver')
+      .withDeleted()
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.name = :receiverName')
+      .setParameters({ userId: user.id, receiverName: payload.name })
+      .getOne();
+
+    if (findedReceiver) throw new BadRequestException('A receiver with this name exist.');
+
     return this.receiverRepository
       .createQueryBuilder('receiver')
       .update(Receiver)

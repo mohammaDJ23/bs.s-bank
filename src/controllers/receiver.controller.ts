@@ -55,6 +55,7 @@ export class ReceiverController {
   @ApiResponse({ status: HttpStatus.OK, type: Receiver })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   update(@Body() body: UpdateReceiverDto, @CurrentUser() user: User): Promise<Receiver> {
     return this.receiverService.update(body, user);
