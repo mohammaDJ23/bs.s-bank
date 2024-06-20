@@ -53,6 +53,17 @@ export class ReceiverService {
       .getOneOrFail();
   }
 
+  async delete(id: number, user: User): Promise<Receiver> {
+    return this.receiverRepository
+      .createQueryBuilder('receiver')
+      .softDelete()
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.id = :receiverId')
+      .setParameters({ userId: user.id, receiverId: id })
+      .returning('*')
+      .exe();
+  }
+
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
     await manager
       .createQueryBuilder(Receiver, 'receiver')

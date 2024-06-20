@@ -9,6 +9,7 @@ import {
   UseInterceptors,
   DefaultValuePipe,
   Param,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
@@ -56,5 +57,18 @@ export class ReceiverController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
     return this.receiverService.findById(id, user);
+  }
+
+  @Delete('receiver/delete')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ReceiverSerializerInterceptor)
+  @ApiQuery({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: ReceiverDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
+    return this.receiverService.delete(id, user);
   }
 }
