@@ -7,6 +7,7 @@ import {
   ParseIntPipe,
   Query,
   UseInterceptors,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
@@ -34,9 +35,10 @@ export class ReceiverController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   findAll(
-    @Query('page', ParseIntPipe) page: number,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('filters', ParseReceiverListFiltersPipe) filters: ReceiverListFiltersDto,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Query('filters', new DefaultValuePipe(new ReceiverListFiltersDto()), ParseReceiverListFiltersPipe)
+    filters: ReceiverListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Receiver[], number]> {
     return this.receiverService.findAll(page, take, filters, user);
