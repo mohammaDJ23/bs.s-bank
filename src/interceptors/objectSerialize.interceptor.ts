@@ -6,6 +6,7 @@ import {
   BillQuantitiesDto,
   CreatedBillDto,
   DeletedBillDto,
+  ReceiverDto,
   RestoredBillDto,
   TotalAmountDto,
   TotalAmountWithoutDatesDto,
@@ -83,5 +84,11 @@ export class UserWithBillInfoSerializerInterceptor extends ObjectSerializerInter
 export class RestoredBillSerializerInterceptor extends ObjectSerializerInterceptor {
   constructor() {
     super(RestoredBillDto);
+  }
+}
+
+export class ReceiverSerializerInterceptor extends ObjectSerializerInterceptor {
+  constructor() {
+    super(ReceiverDto);
   }
 }

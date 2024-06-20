@@ -8,15 +8,16 @@ import {
   Query,
   UseInterceptors,
   DefaultValuePipe,
+  Param,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ReceiverListFiltersDto } from 'src/dtos';
+import { ErrorDto, ReceiverDto, ReceiverListFiltersDto } from 'src/dtos';
 import { Receiver, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ReceiverService } from 'src/services';
 import { ParseReceiverListFiltersPipe } from 'src/pipes';
-import { ReceiversSerializerInterceptor } from 'src/interceptors';
+import { ReceiverSerializerInterceptor, ReceiversSerializerInterceptor } from 'src/interceptors';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
@@ -42,5 +43,18 @@ export class ReceiverController {
     @CurrentUser() user: User,
   ): Promise<[Receiver[], number]> {
     return this.receiverService.findAll(page, take, filters, user);
+  }
+
+  @Get('receiver/:id')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ReceiverSerializerInterceptor)
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: ReceiverDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
+    return this.receiverService.findById(id, user);
   }
 }

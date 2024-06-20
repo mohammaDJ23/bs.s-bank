@@ -44,6 +44,15 @@ export class ReceiverService {
       .getManyAndCount();
   }
 
+  async findById(id: number, user: User): Promise<Receiver> {
+    return this.receiverRepository
+      .createQueryBuilder('receiver')
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.id = :receiverId')
+      .setParameters({ receiverId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
     await manager
       .createQueryBuilder(Receiver, 'receiver')
