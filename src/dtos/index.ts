@@ -22,3 +22,4 @@ export * from './receiverListFilters.dto';
 export * from './receiver.dto';
 export * from './LocationListFilters.dto';
 export * from './location.dto';
+export * from './updateReceiver.dto';
