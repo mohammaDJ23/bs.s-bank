@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, Receiver, User } from '../entities';
-import { ReceiverListFiltersDto } from 'src/dtos';
+import { ReceiverDto, ReceiverListFiltersDto, UpdateReceiverDto } from 'src/dtos';
 
 @Injectable()
 export class ReceiverService {
@@ -42,6 +42,48 @@ export class ReceiverService {
       .skip((page - 1) * take)
       .setParameters({ userId: user.id, q: filters.q })
       .getManyAndCount();
+  }
+
+  async findById(id: number, user: User): Promise<Receiver> {
+    return this.receiverRepository
+      .createQueryBuilder('receiver')
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.id = :receiverId')
+      .setParameters({ receiverId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
+  async delete(id: number, user: User): Promise<Receiver> {
+    return this.receiverRepository
+      .createQueryBuilder('receiver')
+      .softDelete()
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.id = :receiverId')
+      .setParameters({ userId: user.id, receiverId: id })
+      .returning('*')
+      .exe();
+  }
+
+  async update(payload: UpdateReceiverDto, user: User): Promise<Receiver> {
+    const findedReceiver = await this.receiverRepository
+      .createQueryBuilder('receiver')
+      .withDeleted()
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.name = :receiverName')
+      .setParameters({ userId: user.id, receiverName: payload.name })
+      .getOne();
+
+    if (findedReceiver) throw new BadRequestException('A receiver with this name exist.');
+
+    return this.receiverRepository
+      .createQueryBuilder('receiver')
+      .update(Receiver)
+      .set(payload)
+      .where('receiver.user_id = :userId')
+      .andWhere('receiver.id = :receiverId')
+      .setParameters({ userId: user.id, receiverId: payload.id })
+      .returning('*')
+      .exe();
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
