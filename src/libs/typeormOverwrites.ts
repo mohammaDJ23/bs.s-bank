@@ -20,10 +20,10 @@ async function exe<Entity>(this: QueryBuilder<Entity>, options: ExeOptions = {})
     throw new BadRequestException(options.noEffectError);
   }
 
-  let raw = updatedResult.raw;
+  let raw = updatedResult.raw || [];
 
   if (options.camelcase) {
-    raw = updatedResult.raw.map((item: any) => {
+    raw = raw.map((item: any) => {
       if (typeof item === 'object') {
         return camelcaseKeys(item);
       }
@@ -31,9 +31,11 @@ async function exe<Entity>(this: QueryBuilder<Entity>, options: ExeOptions = {})
     });
   }
 
-  raw = options.resultType === 'array' ? raw : raw[0];
+  if (options.resultType === 'array') {
+    return raw;
+  }
 
-  return raw;
+  return raw[0];
 }
 
 SelectQueryBuilder.prototype.getOneOrFail = async function <Entity>(this: SelectQueryBuilder<Entity>) {
