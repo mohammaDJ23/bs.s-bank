@@ -4,3 +4,4 @@ dist
 .env.development
 .env.production
 .env.staging
+./src/libs/localDataSource.ts

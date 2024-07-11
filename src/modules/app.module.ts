@@ -82,7 +82,7 @@ import {
         database: process.env.DATABASE_NAME,
         namingStrategy: new CustomNamingStrategy(),
         entities: [Bill, User, Consumer, Receiver, Location],
-        synchronize: process.env.NODE_ENV === 'development',
+        synchronize: false,
       }),
     }),
     TypeOrmModule.forFeature([Bill, User, Consumer, Receiver, Location]),
