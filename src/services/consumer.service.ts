@@ -2,16 +2,21 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Brackets, EntityManager, Repository } from 'typeorm';
-import { Bill, Consumer, User } from '../entities';
-import { ConsumerListFiltersDto } from 'src/dtos';
+import { Consumer, User } from '../entities';
+import { ConsumerListFiltersDto, CreateBillDto, UpdateBillDto } from 'src/dtos';
 
 @Injectable()
 export class ConsumerService {
   constructor(@InjectRepository(Consumer) private readonly consumerRepository: Repository<Consumer>) {}
 
-  async createWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
+  async createWithEntityManager(
+    manager: EntityManager,
+    payload: CreateBillDto | UpdateBillDto,
+    user: User,
+  ): Promise<Consumer[]> {
     const findedConsumers = await manager
       .createQueryBuilder(Consumer, 'consumer')
+      .withDeleted()
       .where('consumer.name IN (:...consumers)')
       .andWhere('consumer.user_id = :userId')
       .setParameters({ consumers: payload.consumers, userId: user.id })
@@ -25,10 +30,16 @@ export class ConsumerService {
       }
     }
 
-    const newConsumers = consumers.map((consumer) => {
-      return manager.create(Consumer, { name: consumer, user });
-    });
-    await manager.createQueryBuilder().insert().orIgnore(true).into(Consumer).values(newConsumers).execute();
+    const createdConsumers = await manager
+      .createQueryBuilder()
+      .insert()
+      .orIgnore(true)
+      .into(Consumer)
+      .values(consumers.map((consumer) => manager.create(Consumer, { name: consumer, user })))
+      .returning('*')
+      .exe({ resultType: 'array' });
+
+    return findedConsumers.concat(createdConsumers);
   }
 
   findAll(

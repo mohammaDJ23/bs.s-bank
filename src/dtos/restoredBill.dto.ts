@@ -12,18 +12,6 @@ export class RestoredBillDto {
 
   @Expose()
   @ApiProperty()
-  receiver: string;
-
-  @Expose()
-  @ApiProperty()
-  location: string;
-
-  @Expose()
-  @ApiProperty()
-  consumers: string[];
-
-  @Expose()
-  @ApiProperty()
   description: string;
 
   @Expose()
@@ -41,8 +29,4 @@ export class RestoredBillDto {
   @Expose()
   @ApiProperty()
   deletedAt: Date;
-
-  @Expose()
-  @ApiProperty()
-  userId: number;
 }

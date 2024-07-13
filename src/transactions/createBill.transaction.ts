@@ -22,10 +22,19 @@ export class CreateBillTransaction extends BaseTransaction {
   }
 
   protected async execute(manager: EntityManager, payload: CreateBillDto, user: User): Promise<Bill> {
-    const createdBill = await this.billService.createWithEntityManager(manager, payload, user);
-    await this.consumerService.createWithEntityManager(manager, createdBill, user);
-    await this.receiverService.createWithEntityManager(manager, createdBill, user);
-    await this.locationService.createWithEntityManager(manager, createdBill, user);
+    const consumers = await this.consumerService.createWithEntityManager(manager, payload, user);
+    const receiver = await this.receiverService.createWithEntityManager(manager, payload, user);
+    const location = await this.locationService.createWithEntityManager(manager, payload, user);
+
+    const createdBill = await this.billService.createWithEntityManager(
+      manager,
+      payload,
+      location,
+      receiver,
+      consumers,
+      user,
+    );
+
     return createdBill;
   }
 }

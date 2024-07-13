@@ -18,7 +18,11 @@
     "test:watch": "env-cmd -f .env.development jest --watch",
     "test:cov": "env-cmd -f .env.development jest --coverage",
     "test:debug": "env-cmd -f .env.development node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "env-cmd -f .env.development jest --config ./test/jest-e2e.json"
+    "test:e2e": "env-cmd -f .env.development jest --config ./test/jest-e2e.json",
+    "run:local:migration": "npx typeorm-ts-node-commonjs migration:run  -d ./src/libs/localDataSource.ts",
+    "run:prod:migration": "npx typeorm-ts-node-commonjs migration:run  -d ./src/libs/prodDataSource.ts",
+    "revert:local:migration": "npx typeorm-ts-node-commonjs migration:revert  -d ./src/libs/localDataSource.ts",
+    "revert:prod:migration": "npx typeorm-ts-node-commonjs migration:revert  -d ./src/libs/prodDataSource.ts"
   },
   "dependencies": {
     "@nestjs/cache-manager": "^1.0.0",

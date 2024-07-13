@@ -7,8 +7,10 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Bill } from './bill.entity';
 
 @Entity()
 export class Receiver {
@@ -30,4 +32,7 @@ export class Receiver {
   @ManyToOne(() => User, (user) => user.receivers, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
+
+  @OneToMany(() => Bill, (bill) => bill.receiver)
+  bills: Bill[];
 }

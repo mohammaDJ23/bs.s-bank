@@ -7,8 +7,10 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Bill } from './bill.entity';
 
 @Entity()
 export class Location {
@@ -30,4 +32,7 @@ export class Location {
   @ManyToOne(() => User, (user) => user.locations, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
+
+  @OneToMany(() => Bill, (bill) => bill.location)
+  bills: Bill[];
 }

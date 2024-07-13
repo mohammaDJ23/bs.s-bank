@@ -1,24 +1,36 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
-import { Bill, Receiver, User } from '../entities';
-import { ReceiverDto, ReceiverListFiltersDto, UpdateReceiverDto } from 'src/dtos';
+import { Receiver, User } from '../entities';
+import { CreateBillDto, ReceiverListFiltersDto, UpdateBillDto, UpdateReceiverDto } from 'src/dtos';
 
 @Injectable()
 export class ReceiverService {
   constructor(@InjectRepository(Receiver) private readonly receiverRepository: Repository<Receiver>) {}
 
-  async createWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
+  async createWithEntityManager(
+    manager: EntityManager,
+    payload: CreateBillDto | UpdateBillDto,
+    user: User,
+  ): Promise<Receiver> {
     const findedReceiver = await manager
       .createQueryBuilder(Receiver, 'receiver')
+      .withDeleted()
       .where('receiver.name = :receiver')
       .andWhere('receiver.user_id = :userId')
       .setParameters({ receiver: payload.receiver, userId: user.id })
       .getOne();
     if (!findedReceiver) {
-      const newReceiver = manager.create(Receiver, { name: payload.receiver, user });
-      await manager.createQueryBuilder().insert().orIgnore(true).into(Receiver).values(newReceiver).execute();
+      return manager
+        .createQueryBuilder()
+        .insert()
+        .orIgnore(true)
+        .into(Receiver)
+        .values(manager.create(Receiver, { name: payload.receiver, user }))
+        .returning('*')
+        .exe();
     }
+    return findedReceiver;
   }
 
   findAll(
@@ -70,7 +82,8 @@ export class ReceiverService {
       .withDeleted()
       .where('receiver.user_id = :userId')
       .andWhere('receiver.name = :receiverName')
-      .setParameters({ userId: user.id, receiverName: payload.name })
+      .andWhere('receiver.id != :receiverId')
+      .setParameters({ userId: user.id, receiverName: payload.name, receiverId: payload.id })
       .getOne();
 
     if (findedReceiver) throw new BadRequestException('A receiver with this name exist.');

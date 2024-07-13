@@ -83,6 +83,7 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ErrorDto })
   update(@Body() body: UpdateBillDto, @CurrentUser() user: User): Promise<Bill> {
     return this.billService.update(body, user);
   }

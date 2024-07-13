@@ -1,24 +1,36 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
-import { Bill, Location, User } from '../entities';
-import { LocationListFiltersDto } from 'src/dtos';
+import { Location, User } from '../entities';
+import { CreateBillDto, LocationListFiltersDto, UpdateBillDto } from 'src/dtos';
 
 @Injectable()
 export class LocationService {
   constructor(@InjectRepository(Location) private readonly locationRepository: Repository<Location>) {}
 
-  async createWithEntityManager(manager: EntityManager, payload: Bill, user: User): Promise<void> {
+  async createWithEntityManager(
+    manager: EntityManager,
+    payload: CreateBillDto | UpdateBillDto,
+    user: User,
+  ): Promise<Location> {
     const findedLocation = await manager
       .createQueryBuilder(Location, 'location')
+      .withDeleted()
       .where('location.name = :location')
       .andWhere('location.user_id = :userId')
       .setParameters({ location: payload.location, userId: user.id })
       .getOne();
     if (!findedLocation) {
-      const newLocation = manager.create(Location, { name: payload.location, user });
-      await manager.createQueryBuilder().insert().orIgnore(true).into(Location).values(newLocation).execute();
+      return manager
+        .createQueryBuilder()
+        .insert()
+        .orIgnore(true)
+        .into(Location)
+        .values(manager.create(Location, { name: payload.location, user }))
+        .returning('*')
+        .exe();
     }
+    return findedLocation;
   }
 
   findAll(

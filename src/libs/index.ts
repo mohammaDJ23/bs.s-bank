@@ -7,3 +7,5 @@ export * from './query';
 export * from './typeormOverwrites';
 export * from './camelcase';
 export * from './cacheKey';
+export * from './prodDataSource';
+export * from './localDataSource';

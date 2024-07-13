@@ -20,7 +20,11 @@ import { Receiver, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ReceiverService } from 'src/services';
 import { ParseReceiverListFiltersPipe } from 'src/pipes';
-import { ReceiverSerializerInterceptor, ReceiversSerializerInterceptor } from 'src/interceptors';
+import {
+  ReceiverSerializerInterceptor,
+  ReceiversSerializerInterceptor,
+  ResetCacheInterceptor,
+} from 'src/interceptors';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
@@ -50,6 +54,7 @@ export class ReceiverController {
 
   @Put('receiver/update')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ResetCacheInterceptor, ReceiverSerializerInterceptor)
   @ApiBody({ type: UpdateReceiverDto })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: Receiver })
@@ -63,7 +68,7 @@ export class ReceiverController {
 
   @Delete('receiver/delete')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(ReceiverSerializerInterceptor)
+  @UseInterceptors(ResetCacheInterceptor, ReceiverSerializerInterceptor)
   @ApiQuery({ name: 'id', type: 'number' })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: ReceiverDto })
