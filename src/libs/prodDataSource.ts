@@ -38,4 +38,6 @@ const dataSourceOptions: DataSourceOptions = {
   ],
 };
 
+console.log(dataSourceOptions);
+
 export default new DataSource(dataSourceOptions);
