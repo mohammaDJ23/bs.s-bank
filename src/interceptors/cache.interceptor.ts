@@ -24,29 +24,23 @@ export class CacheInterceptor implements NestInterceptor {
       cachedData = { [cacheKey]: {} };
     }
 
-    // if (cachedData[cacheKey][originalUrl]) {
-    //   return of(cachedData[cacheKey][originalUrl]);
-    // } else {
-    //   return handler.handle().pipe(
-    //     mergeMap(async (data: any) => {
-    //       if (request.route.isPrivate) {
-    //         cachedData[cacheKey][originalUrl] = data;
-    //         await this.cacheService.set(
-    //           cacheKey,
-    //           cachedData,
-    //           // one month
-    //           2629746000,
-    //         );
-    //       }
-    //       return data;
-    //     }),
-    //   );
-    // }
-
-    return handler.handle().pipe(
-      mergeMap((data: any) => {
-        return data;
-      }),
-    );
+    if (cachedData[cacheKey][originalUrl]) {
+      return of(cachedData[cacheKey][originalUrl]);
+    } else {
+      return handler.handle().pipe(
+        mergeMap(async (data: any) => {
+          if (request.route.isPrivate) {
+            cachedData[cacheKey][originalUrl] = data;
+            await this.cacheService.set(
+              cacheKey,
+              cachedData,
+              // one month
+              2629746000,
+            );
+          }
+          return data;
+        }),
+      );
+    }
   }
 }
