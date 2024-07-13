@@ -50,6 +50,7 @@ export class ReceiverController {
 
   @Put('receiver/update')
   @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ReceiverSerializerInterceptor)
   @ApiBody({ type: UpdateReceiverDto })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: Receiver })

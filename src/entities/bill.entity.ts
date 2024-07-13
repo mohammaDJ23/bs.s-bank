@@ -7,8 +7,13 @@ import {
   ManyToOne,
   JoinColumn,
   DeleteDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { User } from './user.entity';
+import { Location } from './location.entity';
+import { Receiver } from './receiver.entity';
+import { Consumer } from './consumer.entity';
 
 @Entity()
 export class Bill {
@@ -17,15 +22,6 @@ export class Bill {
 
   @Column({ type: 'varchar', length: 18 })
   amount: string;
-
-  @Column({ type: 'varchar', length: 100 })
-  receiver: string;
-
-  @Column({ type: 'varchar', length: 100 })
-  location: string;
-
-  @Column({ type: 'varchar', length: 100, array: true })
-  consumers: string[];
 
   @Column({ type: 'varchar', length: 500 })
   description: string;
@@ -56,4 +52,16 @@ export class Bill {
   @ManyToOne(() => User, (user) => user.bills, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id', referencedColumnName: 'id' })
   user: User;
+
+  @ManyToOne(() => Location, (location) => location.bills)
+  @JoinColumn({ name: 'location_id', referencedColumnName: 'id' })
+  location: Location;
+
+  @ManyToOne(() => Receiver, (receiver) => receiver.bills)
+  @JoinColumn({ name: 'receiver_id', referencedColumnName: 'id' })
+  receiver: Receiver;
+
+  @ManyToMany(() => Consumer, (consumer) => consumer.bills)
+  @JoinTable({ name: 'bill_consumer' })
+  consumers: Consumer[];
 }
