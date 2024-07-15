@@ -73,7 +73,7 @@ export class ReceiverService {
       .andWhere('receiver.id = :receiverId')
       .setParameters({ userId: user.id, receiverId: id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not delete the receiver.' });
   }
 
   async update(payload: UpdateReceiverDto, user: User): Promise<Receiver> {

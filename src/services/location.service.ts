@@ -73,7 +73,7 @@ export class LocationService {
       .andWhere('location.id = :locationId')
       .setParameters({ userId: user.id, locationId: id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not delete the location.' });
   }
 
   async update(payload: UpdateLocationDto, user: User): Promise<Location> {
