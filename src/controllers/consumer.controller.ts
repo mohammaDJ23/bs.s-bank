@@ -8,15 +8,21 @@ import {
   Query,
   UseInterceptors,
   DefaultValuePipe,
+  Put,
+  Body,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ConsumerListFiltersDto } from 'src/dtos';
+import { ErrorDto, ConsumerListFiltersDto, UpdateConsumerDto } from 'src/dtos';
 import { Consumer, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ConsumerService } from 'src/services';
 import { ParseConsumerListFiltersPipe } from 'src/pipes';
-import { ConsumersSerializerInterceptor } from 'src/interceptors';
+import {
+  ConsumerSerializerInterceptor,
+  ConsumersSerializerInterceptor,
+  ResetCacheInterceptor,
+} from 'src/interceptors';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
@@ -42,5 +48,19 @@ export class ConsumerController {
     @CurrentUser() user: User,
   ): Promise<[Consumer[], number]> {
     return this.consumerService.findAll(page, take, filters, user);
+  }
+
+  @Put('consumer/update')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ResetCacheInterceptor, ConsumerSerializerInterceptor)
+  @ApiBody({ type: UpdateConsumerDto })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: Consumer })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  update(@Body() body: UpdateConsumerDto, @CurrentUser() user: User): Promise<Consumer> {
+    return this.consumerService.update(body, user);
   }
 }
