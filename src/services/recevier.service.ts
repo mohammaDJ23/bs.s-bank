@@ -24,11 +24,10 @@ export class ReceiverService {
       return manager
         .createQueryBuilder()
         .insert()
-        .orIgnore(true)
         .into(Receiver)
         .values(manager.create(Receiver, { name: payload.receiver, user }))
         .returning('*')
-        .exe();
+        .exe({ noEffectError: 'Cound not create receiver.' });
     }
     return findedReceiver;
   }
@@ -73,7 +72,7 @@ export class ReceiverService {
       .andWhere('receiver.id = :receiverId')
       .setParameters({ userId: user.id, receiverId: id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not delete the receiver.' });
   }
 
   async update(payload: UpdateReceiverDto, user: User): Promise<Receiver> {
@@ -96,7 +95,7 @@ export class ReceiverService {
       .andWhere('receiver.id = :receiverId')
       .setParameters({ userId: user.id, receiverId: payload.id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not update the receiver.' });
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {

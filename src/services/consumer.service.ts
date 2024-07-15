@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Consumer, User } from '../entities';
-import { ConsumerListFiltersDto, CreateBillDto, UpdateBillDto } from 'src/dtos';
+import { ConsumerListFiltersDto, CreateBillDto, UpdateBillDto, UpdateConsumerDto } from 'src/dtos';
 
 @Injectable()
 export class ConsumerService {
@@ -30,14 +30,17 @@ export class ConsumerService {
       }
     }
 
+    if (consumers.length <= 0) {
+      return findedConsumers;
+    }
+
     const createdConsumers = await manager
       .createQueryBuilder()
       .insert()
-      .orIgnore(true)
       .into(Consumer)
       .values(consumers.map((consumer) => manager.create(Consumer, { name: consumer, user })))
       .returning('*')
-      .exe({ resultType: 'array' });
+      .exe({ resultType: 'array', noEffectError: 'Could not create the consumers.' });
 
     return findedConsumers.concat(createdConsumers);
   }
@@ -63,6 +66,49 @@ export class ConsumerService {
       .skip((page - 1) * take)
       .setParameters({ userId: user.id, q: filters.q })
       .getManyAndCount();
+  }
+
+  async findById(id: number, user: User): Promise<Consumer> {
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.id = :consumerId')
+      .setParameters({ consumerId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
+  async delete(id: number, user: User): Promise<Consumer> {
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
+      .softDelete()
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.id = :consumerId')
+      .setParameters({ userId: user.id, consumerId: id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not delete the consumer.' });
+  }
+
+  async update(payload: UpdateConsumerDto, user: User): Promise<Consumer> {
+    const findedConsumer = await this.consumerRepository
+      .createQueryBuilder('consumer')
+      .withDeleted()
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.name = :consumerName')
+      .andWhere('consumer.id != :consumerId')
+      .setParameters({ userId: user.id, consumerName: payload.name, consumerId: payload.id })
+      .getOne();
+
+    if (findedConsumer) throw new BadRequestException('A consumer with this name exist.');
+
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
+      .update(Consumer)
+      .set(payload)
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.id = :consumerId')
+      .setParameters({ userId: user.id, consumerId: payload.id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not update the consumer.' });
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {

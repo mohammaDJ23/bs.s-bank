@@ -4,8 +4,10 @@ import { map, Observable } from 'rxjs';
 import {
   BillDto,
   BillQuantitiesDto,
+  ConsumerDto,
   CreatedBillDto,
   DeletedBillDto,
+  LocationDto,
   ReceiverDto,
   RestoredBillDto,
   TotalAmountDto,
@@ -90,5 +92,17 @@ export class RestoredBillSerializerInterceptor extends ObjectSerializerIntercept
 export class ReceiverSerializerInterceptor extends ObjectSerializerInterceptor {
   constructor() {
     super(ReceiverDto);
+  }
+}
+
+export class LocationSerializerInterceptor extends ObjectSerializerInterceptor {
+  constructor() {
+    super(LocationDto);
+  }
+}
+
+export class ConsumerSerializerInterceptor extends ObjectSerializerInterceptor {
+  constructor() {
+    super(ConsumerDto);
   }
 }

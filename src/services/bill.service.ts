@@ -106,7 +106,7 @@ export class BillService {
       .andWhere('bill.id = :billId')
       .setParameters({ userId: user.id, billId: id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not delete the bill.' });
   }
 
   async findById(id: string, user: User): Promise<Bill> {
@@ -469,7 +469,7 @@ export class BillService {
       .andWhere('bill.id = :billId')
       .setParameters({ billId: id, userId: user.id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not restore the bill.' });
   }
 
   findByIdDeleted(id: string, user: User): Promise<Bill> {

@@ -23,3 +23,5 @@ export * from './receiver.dto';
 export * from './LocationListFilters.dto';
 export * from './location.dto';
 export * from './updateReceiver.dto';
+export * from './updateLocation.dto';
+export * from './updateConsumer.dto';
