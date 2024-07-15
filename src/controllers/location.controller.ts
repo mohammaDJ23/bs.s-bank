@@ -11,8 +11,9 @@ import {
   Put,
   Body,
   Delete,
+  Param,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
 import { ErrorDto, LocationDto, LocationListFiltersDto, UpdateLocationDto } from 'src/dtos';
 import { Location, User } from 'src/entities';
@@ -72,5 +73,18 @@ export class LocationController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Location> {
     return this.locationService.delete(id, user);
+  }
+
+  @Get('location/:id')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(LocationsSerializerInterceptor)
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: LocationDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Location> {
+    return this.locationService.findById(id, user);
   }
 }

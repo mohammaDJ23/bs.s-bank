@@ -56,6 +56,15 @@ export class LocationService {
       .getManyAndCount();
   }
 
+  async findById(id: number, user: User): Promise<Location> {
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ locationId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
   async delete(id: number, user: User): Promise<Location> {
     return this.locationRepository
       .createQueryBuilder('location')
