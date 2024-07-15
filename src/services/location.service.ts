@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Location, User } from '../entities';
-import { CreateBillDto, LocationListFiltersDto, UpdateBillDto } from 'src/dtos';
+import { CreateBillDto, LocationListFiltersDto, UpdateBillDto, UpdateLocationDto } from 'src/dtos';
 
 @Injectable()
 export class LocationService {
@@ -54,6 +54,29 @@ export class LocationService {
       .skip((page - 1) * take)
       .setParameters({ userId: user.id, q: filters.q })
       .getManyAndCount();
+  }
+
+  async update(payload: UpdateLocationDto, user: User): Promise<Location> {
+    const findedLocation = await this.locationRepository
+      .createQueryBuilder('location')
+      .withDeleted()
+      .where('location.user_id = :userId')
+      .andWhere('location.name = :locationName')
+      .andWhere('location.id != :locationId')
+      .setParameters({ userId: user.id, locationName: payload.name, locationId: payload.id })
+      .getOne();
+
+    if (findedLocation) throw new BadRequestException('A location with this name exist.');
+
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .update(Location)
+      .set(payload)
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ userId: user.id, locationId: payload.id })
+      .returning('*')
+      .exe();
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {

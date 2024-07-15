@@ -8,15 +8,17 @@ import {
   Query,
   UseInterceptors,
   DefaultValuePipe,
+  Put,
+  Body,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, LocationListFiltersDto } from 'src/dtos';
+import { ErrorDto, LocationListFiltersDto, UpdateLocationDto } from 'src/dtos';
 import { Location, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { LocationService } from 'src/services';
 import { ParseLocationListFiltersPipe } from 'src/pipes';
-import { LocationsSerializerInterceptor } from 'src/interceptors';
+import { LocationsSerializerInterceptor, ResetCacheInterceptor } from 'src/interceptors';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
@@ -42,5 +44,19 @@ export class LocationController {
     @CurrentUser() user: User,
   ): Promise<[Location[], number]> {
     return this.locationService.findAll(page, take, filters, user);
+  }
+
+  @Put('location/update')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ResetCacheInterceptor, LocationsSerializerInterceptor)
+  @ApiBody({ type: UpdateLocationDto })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: Location })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  update(@Body() body: UpdateLocationDto, @CurrentUser() user: User): Promise<Location> {
+    return this.locationService.update(body, user);
   }
 }
