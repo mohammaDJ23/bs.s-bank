@@ -56,6 +56,17 @@ export class LocationService {
       .getManyAndCount();
   }
 
+  async delete(id: number, user: User): Promise<Location> {
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .softDelete()
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ userId: user.id, locationId: id })
+      .returning('*')
+      .exe();
+  }
+
   async update(payload: UpdateLocationDto, user: User): Promise<Location> {
     const findedLocation = await this.locationRepository
       .createQueryBuilder('location')

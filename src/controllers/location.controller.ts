@@ -10,10 +10,11 @@ import {
   DefaultValuePipe,
   Put,
   Body,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, LocationListFiltersDto, UpdateLocationDto } from 'src/dtos';
+import { ErrorDto, LocationDto, LocationListFiltersDto, UpdateLocationDto } from 'src/dtos';
 import { Location, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { LocationService } from 'src/services';
@@ -58,5 +59,18 @@ export class LocationController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   update(@Body() body: UpdateLocationDto, @CurrentUser() user: User): Promise<Location> {
     return this.locationService.update(body, user);
+  }
+
+  @Delete('location/delete')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ResetCacheInterceptor, LocationsSerializerInterceptor)
+  @ApiQuery({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: LocationDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Location> {
+    return this.locationService.delete(id, user);
   }
 }
