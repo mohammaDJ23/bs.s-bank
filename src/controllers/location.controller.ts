@@ -20,7 +20,11 @@ import { Location, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { LocationService } from 'src/services';
 import { ParseLocationListFiltersPipe } from 'src/pipes';
-import { LocationsSerializerInterceptor, ResetCacheInterceptor } from 'src/interceptors';
+import {
+  LocationSerializerInterceptor,
+  LocationsSerializerInterceptor,
+  ResetCacheInterceptor,
+} from 'src/interceptors';
 
 @UseGuards(JwtGuard)
 @Controller('/api/v1/bank')
@@ -64,7 +68,7 @@ export class LocationController {
 
   @Delete('location/delete')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(ResetCacheInterceptor, LocationsSerializerInterceptor)
+  @UseInterceptors(ResetCacheInterceptor, LocationSerializerInterceptor)
   @ApiQuery({ name: 'id', type: 'number' })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: LocationDto })
@@ -77,7 +81,7 @@ export class LocationController {
 
   @Get('location/:id')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(LocationsSerializerInterceptor)
+  @UseInterceptors(LocationSerializerInterceptor)
   @ApiParam({ name: 'id', type: 'number' })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: LocationDto })
