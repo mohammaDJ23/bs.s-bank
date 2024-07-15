@@ -68,6 +68,17 @@ export class ConsumerService {
       .getManyAndCount();
   }
 
+  async delete(id: number, user: User): Promise<Consumer> {
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
+      .softDelete()
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.id = :consumerId')
+      .setParameters({ userId: user.id, consumerId: id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not delete the consumer.' });
+  }
+
   async update(payload: UpdateConsumerDto, user: User): Promise<Consumer> {
     const findedConsumer = await this.consumerRepository
       .createQueryBuilder('consumer')

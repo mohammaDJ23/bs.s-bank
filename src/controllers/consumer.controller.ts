@@ -10,10 +10,11 @@ import {
   DefaultValuePipe,
   Put,
   Body,
+  Delete,
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ConsumerListFiltersDto, UpdateConsumerDto } from 'src/dtos';
+import { ErrorDto, ConsumerListFiltersDto, UpdateConsumerDto, ConsumerDto } from 'src/dtos';
 import { Consumer, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ConsumerService } from 'src/services';
@@ -62,5 +63,19 @@ export class ConsumerController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   update(@Body() body: UpdateConsumerDto, @CurrentUser() user: User): Promise<Consumer> {
     return this.consumerService.update(body, user);
+  }
+
+  @Delete('consumer/delete')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ResetCacheInterceptor, ConsumerSerializerInterceptor)
+  @ApiQuery({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: ConsumerDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Consumer> {
+    return this.consumerService.delete(id, user);
   }
 }
