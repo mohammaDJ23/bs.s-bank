@@ -96,7 +96,7 @@ export class ReceiverService {
       .andWhere('receiver.id = :receiverId')
       .setParameters({ userId: user.id, receiverId: payload.id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not update the receiver.' });
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {

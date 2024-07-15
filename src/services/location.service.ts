@@ -96,7 +96,7 @@ export class LocationService {
       .andWhere('location.id = :locationId')
       .setParameters({ userId: user.id, locationId: payload.id })
       .returning('*')
-      .exe();
+      .exe({ noEffectError: 'Could not update the location.' });
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {

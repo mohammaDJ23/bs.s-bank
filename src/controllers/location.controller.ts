@@ -54,7 +54,7 @@ export class LocationController {
 
   @Put('location/update')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(ResetCacheInterceptor, LocationsSerializerInterceptor)
+  @UseInterceptors(ResetCacheInterceptor, LocationSerializerInterceptor)
   @ApiBody({ type: UpdateLocationDto })
   @ApiBearerAuth()
   @ApiResponse({ status: HttpStatus.OK, type: Location })
