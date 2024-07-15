@@ -11,8 +11,9 @@ import {
   Put,
   Body,
   Delete,
+  Param,
 } from '@nestjs/common';
-import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
 import { ErrorDto, ConsumerListFiltersDto, UpdateConsumerDto, ConsumerDto } from 'src/dtos';
 import { Consumer, User } from 'src/entities';
@@ -77,5 +78,18 @@ export class ConsumerController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Consumer> {
     return this.consumerService.delete(id, user);
+  }
+
+  @Get('consumer/:id')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(ConsumerSerializerInterceptor)
+  @ApiParam({ name: 'id', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: ConsumerDto })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  findById(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Consumer> {
+    return this.consumerService.findById(id, user);
   }
 }

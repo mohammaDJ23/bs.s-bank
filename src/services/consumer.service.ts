@@ -68,6 +68,15 @@ export class ConsumerService {
       .getManyAndCount();
   }
 
+  async findById(id: number, user: User): Promise<Consumer> {
+    return this.consumerRepository
+      .createQueryBuilder('consumer')
+      .where('consumer.user_id = :userId')
+      .andWhere('consumer.id = :consumerId')
+      .setParameters({ consumerId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
   async delete(id: number, user: User): Promise<Consumer> {
     return this.consumerRepository
       .createQueryBuilder('consumer')
