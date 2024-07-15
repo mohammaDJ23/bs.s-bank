@@ -24,11 +24,10 @@ export class ReceiverService {
       return manager
         .createQueryBuilder()
         .insert()
-        .orIgnore(true)
         .into(Receiver)
         .values(manager.create(Receiver, { name: payload.receiver, user }))
         .returning('*')
-        .exe();
+        .exe({ noEffectError: 'Cound not create receiver.' });
     }
     return findedReceiver;
   }

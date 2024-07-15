@@ -30,14 +30,17 @@ export class ConsumerService {
       }
     }
 
+    if (consumers.length <= 0) {
+      return findedConsumers;
+    }
+
     const createdConsumers = await manager
       .createQueryBuilder()
       .insert()
-      .orIgnore(true)
       .into(Consumer)
       .values(consumers.map((consumer) => manager.create(Consumer, { name: consumer, user })))
       .returning('*')
-      .exe({ resultType: 'array' });
+      .exe({ resultType: 'array', noEffectError: 'Could not create the consumers.' });
 
     return findedConsumers.concat(createdConsumers);
   }

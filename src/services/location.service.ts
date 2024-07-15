@@ -24,11 +24,10 @@ export class LocationService {
       return manager
         .createQueryBuilder()
         .insert()
-        .orIgnore(true)
         .into(Location)
         .values(manager.create(Location, { name: payload.location, user }))
         .returning('*')
-        .exe();
+        .exe({ noEffectError: 'Cound not create location.' });
     }
     return findedLocation;
   }
