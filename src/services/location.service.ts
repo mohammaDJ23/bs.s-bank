@@ -1,8 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Location, User } from '../entities';
-import { CreateBillDto, LocationListFiltersDto, UpdateBillDto } from 'src/dtos';
+import { CreateBillDto, LocationListFiltersDto, UpdateBillDto, UpdateLocationDto } from 'src/dtos';
 
 @Injectable()
 export class LocationService {
@@ -24,11 +24,10 @@ export class LocationService {
       return manager
         .createQueryBuilder()
         .insert()
-        .orIgnore(true)
         .into(Location)
         .values(manager.create(Location, { name: payload.location, user }))
         .returning('*')
-        .exe();
+        .exe({ noEffectError: 'Cound not create location.' });
     }
     return findedLocation;
   }
@@ -54,6 +53,49 @@ export class LocationService {
       .skip((page - 1) * take)
       .setParameters({ userId: user.id, q: filters.q })
       .getManyAndCount();
+  }
+
+  async findById(id: number, user: User): Promise<Location> {
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ locationId: id, userId: user.id })
+      .getOneOrFail();
+  }
+
+  async delete(id: number, user: User): Promise<Location> {
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .softDelete()
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ userId: user.id, locationId: id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not delete the location.' });
+  }
+
+  async update(payload: UpdateLocationDto, user: User): Promise<Location> {
+    const findedLocation = await this.locationRepository
+      .createQueryBuilder('location')
+      .withDeleted()
+      .where('location.user_id = :userId')
+      .andWhere('location.name = :locationName')
+      .andWhere('location.id != :locationId')
+      .setParameters({ userId: user.id, locationName: payload.name, locationId: payload.id })
+      .getOne();
+
+    if (findedLocation) throw new BadRequestException('A location with this name exist.');
+
+    return this.locationRepository
+      .createQueryBuilder('location')
+      .update(Location)
+      .set(payload)
+      .where('location.user_id = :userId')
+      .andWhere('location.id = :locationId')
+      .setParameters({ userId: user.id, locationId: payload.id })
+      .returning('*')
+      .exe({ noEffectError: 'Could not update the location.' });
   }
 
   async deleteManyWithEntityManager(manager: EntityManager, payload: User): Promise<void> {
