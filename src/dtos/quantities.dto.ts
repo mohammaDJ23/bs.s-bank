@@ -1,12 +1,12 @@
 import { Expose } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class BillQuantitiesDto {
-  @Expose()
-  @ApiProperty()
-  quantities: string;
-
+export class QuantitiesDto {
   @Expose()
   @ApiProperty()
   amount: string;
+
+  @Expose()
+  @ApiProperty()
+  quantities: string;
 }

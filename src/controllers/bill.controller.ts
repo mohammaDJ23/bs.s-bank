@@ -21,19 +21,17 @@ import {
   BillDto,
   CreateBillDto,
   UpdateBillDto,
-  TotalAmountDto,
-  TotalAmountWithoutDatesDto,
-  PeriodAmountDto,
   LastYearDto,
   ErrorDto,
   UpdatedBillDto,
   DeletedBillDto,
-  BillQuantitiesDto,
   BillListFiltersDto,
   DeletedBillListFiltersDto,
   CreatedBillDto,
   RestoredBillDto,
   AllBillListFiltersDto,
+  QuantitiesDto,
+  QuantitiesDeletedDto,
 } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 import { DissimilarRolesGuard, JwtGuard, RolesGuard, SameRolesGuard } from 'src/guards';
@@ -42,17 +40,18 @@ import { ParseAllBillListFiltersPipe, ParseBillListFiltersPipe } from 'src/pipes
 import {
   BillsSerializerInterceptor,
   BillSerializerInterceptor,
-  BillQuantitiesSerializerInterceptor,
   CreatedBillSerializerInterceptor,
   DeletedBillsSerializerInterceptor,
   DeletedBillSerializerInterceptor,
   LastYearBillsSerializerInterceptor,
   RestoredBillSerializerInterceptor,
-  TotalAmountSerializerInterceptor,
-  TotalAmountWithoutDatesSerializerInterceptor,
   UpdatedBillSerializerInterceptor,
   CacheInterceptor,
   ResetCacheInterceptor,
+  QuantitiesSerializerInterceptor,
+  QuantitiesDeletedSerializerInterceptor,
+  AllQuantitiesSerializerInterceptor,
+  AllQuantitiesDeletedSerializerInterceptor,
 } from 'src/interceptors';
 import { UserRoles } from 'src/types';
 
@@ -101,42 +100,27 @@ export class BillController {
     return this.billService.delete(id, user);
   }
 
-  @Get('bill/total-amount')
+  @Get('bill/quantities')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(CacheInterceptor, TotalAmountSerializerInterceptor)
+  @UseInterceptors(CacheInterceptor, QuantitiesSerializerInterceptor)
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: TotalAmountDto })
+  @ApiResponse({ status: HttpStatus.OK, type: QuantitiesDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  totalAmount(@CurrentUser() user: User): Promise<TotalAmountDto> {
-    return this.billService.totalAmount(user);
+  quantities(@CurrentUser() user: User): Promise<QuantitiesDto> {
+    return this.billService.quantities(user);
   }
 
   @Get('bill/deleted-quantities')
   @HttpCode(HttpStatus.OK)
   @UseGuards(RolesGuard)
-  @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
+  @UseInterceptors(CacheInterceptor, QuantitiesDeletedSerializerInterceptor)
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
+  @ApiResponse({ status: HttpStatus.OK, type: QuantitiesDeletedDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  quantitiesDeleted(@CurrentUser() user: User): Promise<BillQuantitiesDto> {
+  quantitiesDeleted(@CurrentUser() user: User): Promise<QuantitiesDeletedDto> {
     return this.billService.quantitiesDeleted(user);
-  }
-
-  @Post('bill/period-amount')
-  @HttpCode(HttpStatus.OK)
-  @UseInterceptors(TotalAmountWithoutDatesSerializerInterceptor)
-  @ApiBody({ type: PeriodAmountDto })
-  @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: TotalAmountWithoutDatesDto })
-  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
-  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  periodAmount(
-    @Body() body: PeriodAmountDto,
-    @CurrentUser() user: User,
-  ): Promise<TotalAmountWithoutDatesDto> {
-    return this.billService.periodAmount(body, user);
   }
 
   @Get('bill/last-year')
@@ -209,12 +193,12 @@ export class BillController {
   @HttpCode(HttpStatus.OK)
   @Roles(UserRoles.OWNER, UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
+  @UseInterceptors(CacheInterceptor, AllQuantitiesSerializerInterceptor)
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
+  @ApiResponse({ status: HttpStatus.OK, type: QuantitiesDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  quantities(): Promise<BillQuantitiesDto> {
+  Allquantities(): Promise<QuantitiesDto> {
     return this.billService.allQuantities();
   }
 
@@ -222,12 +206,12 @@ export class BillController {
   @HttpCode(HttpStatus.OK)
   @Roles(UserRoles.OWNER, UserRoles.ADMIN)
   @UseGuards(RolesGuard)
-  @UseInterceptors(CacheInterceptor, BillQuantitiesSerializerInterceptor)
+  @UseInterceptors(CacheInterceptor, AllQuantitiesDeletedSerializerInterceptor)
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: BillQuantitiesDto })
+  @ApiResponse({ status: HttpStatus.OK, type: QuantitiesDeletedDto })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  allQuantitiesDeleted(): Promise<BillQuantitiesDto> {
+  allQuantitiesDeleted(): Promise<QuantitiesDeletedDto> {
     return this.billService.allQuantitiesDeleted();
   }
 
