@@ -24,7 +24,7 @@ import {
   TotalAmountDto,
   TotalAmountWithoutDatesDto,
   PeriodAmountDto,
-  LastWeekDto,
+  LastYearDto,
   ErrorDto,
   UpdatedBillDto,
   DeletedBillDto,
@@ -46,7 +46,7 @@ import {
   CreatedBillSerializerInterceptor,
   DeletedBillsSerializerInterceptor,
   DeletedBillSerializerInterceptor,
-  LastWeekBillsSerializerInterceptor,
+  LastYearBillsSerializerInterceptor,
   RestoredBillSerializerInterceptor,
   TotalAmountSerializerInterceptor,
   TotalAmountWithoutDatesSerializerInterceptor,
@@ -139,15 +139,15 @@ export class BillController {
     return this.billService.periodAmount(body, user);
   }
 
-  @Get('bill/last-week')
+  @Get('bill/last-year')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(LastWeekBillsSerializerInterceptor)
+  @UseInterceptors(LastYearBillsSerializerInterceptor)
   @ApiBearerAuth()
-  @ApiResponse({ status: HttpStatus.OK, type: LastWeekDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.OK, type: LastYearDto, isArray: true })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  lastWeek(@CurrentUser() user: User): Promise<LastWeekDto[]> {
-    return this.billService.lastWeek(user);
+  lastYear(@CurrentUser() user: User): Promise<LastYearDto[]> {
+    return this.billService.lastYear(user);
   }
 
   @Get('bill/excel/:id')
