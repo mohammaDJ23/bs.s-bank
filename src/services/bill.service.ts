@@ -16,6 +16,7 @@ import {
   AllBillListFiltersDto,
   QuantitiesDto,
   QuantitiesDeletedDto,
+  MostActiveUsersDto,
 } from 'src/dtos';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, Consumer, Receiver, User, Location } from '../entities';
@@ -441,5 +442,56 @@ export class BillService {
       .andWhere('bill.user_id = :userId')
       .setParameters({ billId: id, userId: user.id })
       .getOneOrFail();
+  }
+
+  async getMostActiveUsers(take: number): Promise<MostActiveUsersDto[]> {
+    return this.billRepository.query(
+      `
+        SELECT COALESCE(b.quantities, 0) as quantities,
+          json_build_object(
+            'id', u.id,
+            'firstName', u.first_name,
+            'lastName', u.last_name,
+            'email', u.email,
+            'phone', u.phone,
+            'role', u.role,
+            'createdBy', u.created_by,
+            'createdAt', u.created_at,
+            'updatedAt', u.updated_at,
+            'deletedAt', u.deleted_at,
+            'parent', json_build_object(
+              'id', u2.id,
+              'firstName', u2.first_name,
+              'lastName', u2.last_name,
+              'email', u2.email,
+              'phone', u2.phone,
+              'role', u2.role,
+              'createdBy', u2.created_by,
+              'createdAt', u2.created_at,
+              'updatedAt', u2.updated_at,
+              'deletedAt', u2.deleted_at
+            )
+          ) AS user
+        FROM public.user as u
+
+        LEFT JOIN (
+          SELECT COUNT(b.id) AS quantities, b.user_id
+          FROM public.bill AS b
+          WHERE b.deleted_at IS NULL
+          GROUP BY b.user_id
+        ) b ON b.user_id = u.id
+
+        LEFT JOIN (
+          SELECT * FROM public.user AS u2
+        ) u2 ON u2.id = u.created_by
+
+        WHERE u.deleted_at IS NULL 
+
+        ORDER BY quantities DESC
+        
+        LIMIT $1;
+      `,
+      [take],
+    );
   }
 }

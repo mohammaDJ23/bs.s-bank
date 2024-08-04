@@ -14,6 +14,7 @@ import {
   StreamableFile,
   Query,
   UseInterceptors,
+  DefaultValuePipe,
 } from '@nestjs/common';
 import { ApiBody, ApiTags, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CurrentUser, DissimilarRoles, Roles, SameRoles } from 'src/decorators';
@@ -32,6 +33,7 @@ import {
   AllBillListFiltersDto,
   QuantitiesDto,
   QuantitiesDeletedDto,
+  MostActiveUsersDto,
 } from 'src/dtos';
 import { Bill, User } from 'src/entities';
 import { DissimilarRolesGuard, JwtGuard, RolesGuard, SameRolesGuard } from 'src/guards';
@@ -52,6 +54,7 @@ import {
   QuantitiesDeletedSerializerInterceptor,
   AllQuantitiesSerializerInterceptor,
   AllQuantitiesDeletedSerializerInterceptor,
+  MostActiveUsersSerializerInterceptor,
 } from 'src/interceptors';
 import { UserRoles } from 'src/types';
 
@@ -168,6 +171,22 @@ export class BillController {
     @Query('filters', ParseAllBillListFiltersPipe) filters: AllBillListFiltersDto,
   ): Promise<[Bill[], number]> {
     return this.billService.findAll(page, take, filters);
+  }
+
+  @Get('owner/bill/most-active-users')
+  @HttpCode(HttpStatus.OK)
+  @Roles(UserRoles.OWNER)
+  @UseGuards(RolesGuard)
+  @UseInterceptors(MostActiveUsersSerializerInterceptor)
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: MostActiveUsersDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  getMostActiveUsers(
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+  ): Promise<MostActiveUsersDto[]> {
+    return this.billService.getMostActiveUsers(take);
   }
 
   @Get('bill/all')
