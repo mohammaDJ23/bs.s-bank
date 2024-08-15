@@ -444,7 +444,7 @@ export class BillService {
       .getOneOrFail();
   }
 
-  async getMostActiveUsers(take: number): Promise<MostActiveUsersDto[]> {
+  async mostActiveUsers(take: number): Promise<MostActiveUsersDto[]> {
     return this.billRepository.query(
       `
         SELECT COALESCE(b.quantities, 0) as quantities,

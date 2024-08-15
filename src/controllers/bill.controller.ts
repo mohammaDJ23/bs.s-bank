@@ -183,10 +183,10 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.OK, type: MostActiveUsersDto, isArray: true })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
-  getMostActiveUsers(
+  mostActiveUsers(
     @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
   ): Promise<MostActiveUsersDto[]> {
-    return this.billService.getMostActiveUsers(take);
+    return this.billService.mostActiveUsers(take);
   }
 
   @Get('bill/all')
