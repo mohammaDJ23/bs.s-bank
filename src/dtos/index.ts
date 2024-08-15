@@ -27,3 +27,4 @@ export * from './updateConsumer.dto';
 export * from './mostActiveUsers.dto';
 export * from './mostActiveConsumers.dto';
 export * from './mostActiveLocations.dto';
+export * from './mostActiveReceivers.dto';

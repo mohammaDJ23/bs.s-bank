@@ -15,12 +15,19 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam, ApiBody } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ReceiverDto, ReceiverListFiltersDto, UpdateReceiverDto } from 'src/dtos';
+import {
+  ErrorDto,
+  MostActiveReceiversDto,
+  ReceiverDto,
+  ReceiverListFiltersDto,
+  UpdateReceiverDto,
+} from 'src/dtos';
 import { Receiver, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ReceiverService } from 'src/services';
 import { ParseReceiverListFiltersPipe } from 'src/pipes';
 import {
+  MostActiveReceiversSerializerInterceptor,
   ReceiverSerializerInterceptor,
   ReceiversSerializerInterceptor,
   ResetCacheInterceptor,
@@ -77,6 +84,21 @@ export class ReceiverController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Receiver> {
     return this.receiverService.delete(id, user);
+  }
+
+  @Get('receiver/most-active-receivers')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(MostActiveReceiversSerializerInterceptor)
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: MostActiveReceiversDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  mostActive(
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @CurrentUser() user: User,
+  ): Promise<MostActiveReceiversDto[]> {
+    return this.receiverService.mostActive(user, take);
   }
 
   @Get('receiver/:id')
