@@ -2,7 +2,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Location, User } from '../entities';
-import { CreateBillDto, LocationListFiltersDto, UpdateBillDto, UpdateLocationDto } from 'src/dtos';
+import {
+  CreateBillDto,
+  LocationListFiltersDto,
+  MostActiveLocationsDto,
+  UpdateBillDto,
+  UpdateLocationDto,
+} from 'src/dtos';
 
 @Injectable()
 export class LocationService {
@@ -114,5 +120,37 @@ export class LocationService {
       .where('location.user_id = :id')
       .setParameters({ id: payload.id })
       .execute();
+  }
+
+  mostActive(user: User, take: number): Promise<MostActiveLocationsDto[]> {
+    return this.locationRepository.query(
+      `
+        SELECT COUNT(l.id) AS quantities,
+          json_build_object(
+            'id', l.id, 
+            'name', l.name,
+            'createdAt', l.created_at,
+            'updatedAt', l.updated_at,
+            'deletedAt', l.deleted_at
+          ) AS location FROM public.location AS l
+
+        LEFT JOIN (
+          SELECT b.location_id, b.deleted_at, id FROM public.bill AS b
+          WHERE b.user_id = $1
+        ) b ON b.location_id = l.id
+
+        WHERE l.deleted_at IS NULL AND
+          l.user_id = $1 AND
+          b.deleted_at IS NULL AND
+          b.id IS NOT NULL
+
+        GROUP BY l.id
+
+        ORDER BY quantities DESC
+
+        LIMIT $2;
+      `,
+      [user.id, take],
+    );
   }
 }

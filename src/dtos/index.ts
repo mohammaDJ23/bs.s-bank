@@ -26,3 +26,4 @@ export * from './updateLocation.dto';
 export * from './updateConsumer.dto';
 export * from './mostActiveUsers.dto';
 export * from './mostActiveConsumers.dto';
+export * from './mostActiveLocations.dto';

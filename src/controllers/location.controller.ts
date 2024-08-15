@@ -15,7 +15,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, LocationDto, LocationListFiltersDto, UpdateLocationDto } from 'src/dtos';
+import {
+  ErrorDto,
+  LocationDto,
+  LocationListFiltersDto,
+  MostActiveLocationsDto,
+  UpdateLocationDto,
+} from 'src/dtos';
 import { Location, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { LocationService } from 'src/services';
@@ -23,6 +29,7 @@ import { ParseLocationListFiltersPipe } from 'src/pipes';
 import {
   LocationSerializerInterceptor,
   LocationsSerializerInterceptor,
+  MostActiveLocationsSerializerInterceptor,
   ResetCacheInterceptor,
 } from 'src/interceptors';
 
@@ -77,6 +84,21 @@ export class LocationController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Location> {
     return this.locationService.delete(id, user);
+  }
+
+  @Get('location/most-active-locations')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(MostActiveLocationsSerializerInterceptor)
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: MostActiveLocationsDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  mostActive(
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @CurrentUser() user: User,
+  ): Promise<MostActiveLocationsDto[]> {
+    return this.locationService.mostActive(user, take);
   }
 
   @Get('location/:id')

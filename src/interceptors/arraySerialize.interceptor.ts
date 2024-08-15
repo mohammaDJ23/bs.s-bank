@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
 import { plainToClass } from 'class-transformer';
 import { map, Observable } from 'rxjs';
-import { LastYearDto, MostActiveConsumersDto, MostActiveUsersDto } from 'src/dtos';
+import { LastYearDto, MostActiveConsumersDto, MostActiveLocationsDto, MostActiveUsersDto } from 'src/dtos';
 import { ClassConstructor } from 'src/types';
 
 export class ArraySerializerInterceptor implements NestInterceptor {
@@ -37,5 +37,11 @@ export class MostActiveUsersSerializerInterceptor extends ArraySerializerInterce
 export class MostActiveConsumersSerializerInterceptor extends ArraySerializerInterceptor {
   constructor() {
     super(MostActiveConsumersDto);
+  }
+}
+
+export class MostActiveLocationsSerializerInterceptor extends ArraySerializerInterceptor {
+  constructor() {
+    super(MostActiveLocationsDto);
   }
 }
