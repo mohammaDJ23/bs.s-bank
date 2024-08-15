@@ -158,7 +158,8 @@ export class ConsumerService {
         
         WHERE c.deleted_at IS NULL AND 
           c.user_id = $1 AND 
-          bc.bill_deleted_at IS NULL
+          bc.bill_deleted_at IS NULL AND
+          bc.consumer_id IS NOT NULL
           
         GROUP BY c.id
 
