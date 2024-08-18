@@ -485,7 +485,7 @@ export class BillService {
           SELECT * FROM public.user AS u2
         ) u2 ON u2.id = u.created_by
 
-        WHERE u.deleted_at IS NULL 
+        WHERE u.deleted_at IS NULL AND quantities > 0
 
         ORDER BY quantities DESC
         
