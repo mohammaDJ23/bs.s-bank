@@ -8,16 +8,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
-  LastWeekDto,
-  PeriodAmountDto,
-  TotalAmountDto,
-  TotalAmountWithoutDatesDto,
+  LastYearDto,
   UpdateBillDto,
   CreateBillDto,
-  BillQuantitiesDto,
   BillListFiltersDto,
   DeletedBillListFiltersDto,
   AllBillListFiltersDto,
+  QuantitiesDto,
+  QuantitiesDeletedDto,
+  MostActiveUsersDto,
 } from 'src/dtos';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Bill, Consumer, Receiver, User, Location } from '../entities';
@@ -258,61 +257,50 @@ export class BillService {
       .getManyAndCount();
   }
 
-  totalAmount(user: User): Promise<TotalAmountDto> {
+  quantities(user: User): Promise<QuantitiesDto> {
     return this.billRepository
       .createQueryBuilder('bill')
-      .leftJoinAndSelect('bill.user', 'user')
-      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
+      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'amount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
-      .addSelect(
-        (qb) =>
-          qb
-            .select('COALESCE(COUNT(bill.id), 0)', 'dateLessQuantities')
-            .from(Bill, 'bill')
-            .leftJoin('bill.user', 'user')
-            .where('user.id = :userId')
-            .andWhere('bill.date IS NULL'),
-        'dateLessQuantities',
-      )
-      .addSelect(
-        (qb) =>
-          qb
-            .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'dateLessTotalAmount')
-            .from(Bill, 'bill')
-            .leftJoin('bill.user', 'user')
-            .where('user.id = :userId')
-            .andWhere('bill.date IS NULL'),
-        'dateLessTotalAmount',
-      )
-      .addSelect('COALESCE(EXTRACT(EPOCH FROM MIN(bill.date)) * 1000, 0)::BIGINT', 'start')
-      .addSelect('COALESCE(EXTRACT(EPOCH FROM MAX(bill.date)) * 1000, 0)::BIGINT', 'end')
-      .where('user.id = :userId')
-      .andWhere('bill.date IS NOT NULL')
+      .where('bill.user_id = :userId')
       .setParameters({ userId: user.id })
       .getRawOne();
   }
 
-  async periodAmount(payload: PeriodAmountDto, user: User): Promise<TotalAmountWithoutDatesDto> {
+  quantitiesDeleted(user: User): Promise<QuantitiesDeletedDto> {
     return this.billRepository
       .createQueryBuilder('bill')
-      .leftJoinAndSelect('bill.user', 'user')
-      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'totalAmount')
+      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'amount')
       .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
-      .where('user.id = :userId')
-      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT >= (:start)::BIGINT')
-      .andWhere('COALESCE(EXTRACT(EPOCH FROM date(bill.date)) * 1000, 0)::BIGINT <= (:end)::BIGINT')
-      .setParameters({
-        userId: user.id,
-        start: payload.start,
-        end: payload.end,
-      })
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .andWhere('bill.user_id = :userId')
+      .setParameters({ userId: user.id })
       .getRawOne();
   }
 
-  async lastWeek(user: User): Promise<LastWeekDto[]> {
+  allQuantities(): Promise<QuantitiesDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'amount')
+      .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
+      .getRawOne();
+  }
+
+  allQuantitiesDeleted(): Promise<QuantitiesDeletedDto> {
+    return this.billRepository
+      .createQueryBuilder('bill')
+      .select('COALESCE(SUM(bill.amount::BIGINT), 0)::TEXT', 'amount')
+      .addSelect('COALESCE(COUNT(bill.id), 0)', 'quantities')
+      .withDeleted()
+      .where('bill.deletedAt IS NOT NULL')
+      .getRawOne();
+  }
+
+  async lastYear(user: User): Promise<LastYearDto[]> {
     return this.billRepository.query(
       `
-        WITH lastWeek (date) AS (
+        WITH lastYear (date) AS (
           SELECT t.day::date FROM generate_series(
             (NOW() - INTERVAL '1 YEAR')::timestamp,
             NOW()::timestamp,
@@ -320,50 +308,20 @@ export class BillService {
           ) as t(day)
         ) 
         SELECT
-          COALESCE(EXTRACT(EPOCH FROM lastWeek.date) * 1000, 0)::BIGINT AS date,
+          COALESCE(EXTRACT(EPOCH FROM lastYear.date) * 1000, 0)::BIGINT AS date,
           COALESCE(SUM(bill.amount::BIGINT), 0)::BIGINT AS amount,
           COUNT(bill.id)::INTEGER as count
-        FROM lastWeek
+        FROM lastYear
         FULL JOIN bill ON
-          to_char(lastWeek.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND
+          to_char(lastYear.date, 'YYYY-MM-DD') = to_char(bill.created_at, 'YYYY-MM-DD') AND
             bill.user_id = $1 AND
             bill.deleted_at IS NULL
-        WHERE lastWeek.date IS NOT NULL
-        GROUP BY lastWeek.date
-        ORDER BY lastWeek.date ASC;
+        WHERE lastYear.date IS NOT NULL
+        GROUP BY lastYear.date
+        ORDER BY lastYear.date ASC;
       `,
       [user.id],
     );
-  }
-
-  allQuantities(): Promise<BillQuantitiesDto> {
-    return this.billRepository
-      .createQueryBuilder('bill')
-      .select('COUNT(bill.id)::TEXT', 'quantities')
-      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
-      .getRawOne();
-  }
-
-  allQuantitiesDeleted(): Promise<BillQuantitiesDto> {
-    return this.billRepository
-      .createQueryBuilder('bill')
-      .select('COUNT(bill.id)::TEXT', 'quantities')
-      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
-      .withDeleted()
-      .where('bill.deletedAt IS NOT NULL')
-      .getRawOne();
-  }
-
-  quantitiesDeleted(user: User): Promise<BillQuantitiesDto> {
-    return this.billRepository
-      .createQueryBuilder('bill')
-      .select('COUNT(bill.id)::TEXT', 'quantities')
-      .addSelect('SUM(bill.amount::BIGINT)::TEXT', 'amount')
-      .withDeleted()
-      .where('bill.deletedAt IS NOT NULL')
-      .andWhere('bill.user_id = :userId')
-      .setParameters({ userId: user.id })
-      .getRawOne();
   }
 
   private getBillReportPath(): string {
@@ -484,5 +442,56 @@ export class BillService {
       .andWhere('bill.user_id = :userId')
       .setParameters({ billId: id, userId: user.id })
       .getOneOrFail();
+  }
+
+  async mostActiveUsers(take: number): Promise<MostActiveUsersDto[]> {
+    return this.billRepository.query(
+      `
+        SELECT COALESCE(b.quantities, 0) as quantities,
+          json_build_object(
+            'id', u.id,
+            'firstName', u.first_name,
+            'lastName', u.last_name,
+            'email', u.email,
+            'phone', u.phone,
+            'role', u.role,
+            'createdBy', u.created_by,
+            'createdAt', u.created_at,
+            'updatedAt', u.updated_at,
+            'deletedAt', u.deleted_at,
+            'parent', json_build_object(
+              'id', u2.id,
+              'firstName', u2.first_name,
+              'lastName', u2.last_name,
+              'email', u2.email,
+              'phone', u2.phone,
+              'role', u2.role,
+              'createdBy', u2.created_by,
+              'createdAt', u2.created_at,
+              'updatedAt', u2.updated_at,
+              'deletedAt', u2.deleted_at
+            )
+          ) AS user
+        FROM public.user as u
+
+        LEFT JOIN (
+          SELECT COUNT(b.id) AS quantities, b.user_id
+          FROM public.bill AS b
+          WHERE b.deleted_at IS NULL
+          GROUP BY b.user_id
+        ) b ON b.user_id = u.id
+
+        LEFT JOIN (
+          SELECT * FROM public.user AS u2
+        ) u2 ON u2.id = u.created_by
+
+        WHERE u.deleted_at IS NULL AND quantities > 0
+
+        ORDER BY quantities DESC
+        
+        LIMIT $1;
+      `,
+      [take],
+    );
   }
 }

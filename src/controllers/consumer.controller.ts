@@ -15,7 +15,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiResponse, ApiBearerAuth, ApiQuery, ApiBody, ApiParam } from '@nestjs/swagger';
 import { CurrentUser } from 'src/decorators';
-import { ErrorDto, ConsumerListFiltersDto, UpdateConsumerDto, ConsumerDto } from 'src/dtos';
+import {
+  ErrorDto,
+  ConsumerListFiltersDto,
+  UpdateConsumerDto,
+  ConsumerDto,
+  MostActiveConsumersDto,
+} from 'src/dtos';
 import { Consumer, User } from 'src/entities';
 import { JwtGuard } from 'src/guards';
 import { ConsumerService } from 'src/services';
@@ -23,6 +29,7 @@ import { ParseConsumerListFiltersPipe } from 'src/pipes';
 import {
   ConsumerSerializerInterceptor,
   ConsumersSerializerInterceptor,
+  MostActiveConsumersSerializerInterceptor,
   ResetCacheInterceptor,
 } from 'src/interceptors';
 
@@ -78,6 +85,21 @@ export class ConsumerController {
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   delete(@Query('id', ParseIntPipe) id: number, @CurrentUser() user: User): Promise<Consumer> {
     return this.consumerService.delete(id, user);
+  }
+
+  @Get('consumer/most-active-consumers')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(MostActiveConsumersSerializerInterceptor)
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: MostActiveConsumersDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  mostActive(
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @CurrentUser() user: User,
+  ): Promise<MostActiveConsumersDto[]> {
+    return this.consumerService.mostActive(user, take);
   }
 
   @Get('consumer/:id')

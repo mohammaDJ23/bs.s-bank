@@ -3,7 +3,13 @@ import { InjectRepository } from '@nestjs/typeorm';
 
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Consumer, User } from '../entities';
-import { ConsumerListFiltersDto, CreateBillDto, UpdateBillDto, UpdateConsumerDto } from 'src/dtos';
+import {
+  ConsumerListFiltersDto,
+  CreateBillDto,
+  MostActiveConsumersDto,
+  UpdateBillDto,
+  UpdateConsumerDto,
+} from 'src/dtos';
 
 @Injectable()
 export class ConsumerService {
@@ -127,5 +133,41 @@ export class ConsumerService {
       .where('consumer.user_id = :id')
       .setParameters({ id: payload.id })
       .execute();
+  }
+
+  mostActive(user: User, take: number): Promise<MostActiveConsumersDto[]> {
+    return this.consumerRepository.query(
+      `
+        SELECT COUNT(c.id) as quantities, 
+          json_build_object(
+            'id', c.id, 
+            'name', c.name,
+            'createdAt', c.created_at,
+            'updatedAt', c.updated_at,
+            'deletedAt', c.deleted_at
+          ) AS consumer FROM public.consumer AS c 
+
+        LEFT JOIN (
+          SELECT bc.consumer_id, b.bill_deleted_at FROM public.bill_consumer AS bc
+
+          LEFT JOIN (
+            SELECT b.deleted_at AS bill_deleted_at, id FROM public.bill AS b
+            WHERE b.user_id = $1
+          ) b ON b.id = bc.bill_id
+        ) bc ON bc.consumer_id = c.id
+        
+        WHERE c.deleted_at IS NULL AND 
+          c.user_id = $1 AND 
+          bc.bill_deleted_at IS NULL AND
+          bc.consumer_id IS NOT NULL
+          
+        GROUP BY c.id
+
+        ORDER BY quantities DESC
+        
+        LIMIT $2;
+      `,
+      [user.id, take],
+    );
   }
 }

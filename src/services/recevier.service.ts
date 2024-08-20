@@ -2,7 +2,13 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, EntityManager, Repository } from 'typeorm';
 import { Receiver, User } from '../entities';
-import { CreateBillDto, ReceiverListFiltersDto, UpdateBillDto, UpdateReceiverDto } from 'src/dtos';
+import {
+  CreateBillDto,
+  MostActiveReceiversDto,
+  ReceiverListFiltersDto,
+  UpdateBillDto,
+  UpdateReceiverDto,
+} from 'src/dtos';
 
 @Injectable()
 export class ReceiverService {
@@ -114,5 +120,37 @@ export class ReceiverService {
       .where('receiver.user_id = :id')
       .setParameters({ id: payload.id })
       .execute();
+  }
+
+  mostActive(user: User, take: number): Promise<MostActiveReceiversDto[]> {
+    return this.receiverRepository.query(
+      `
+        SELECT COUNT(r.id) AS quantities,
+          json_build_object(
+            'id', r.id, 
+            'name', r.name,
+            'createdAt', r.created_at,
+            'updatedAt', r.updated_at,
+            'deletedAt', r.deleted_at
+          ) AS receiver FROM public.receiver AS r
+
+        LEFT JOIN (
+          SELECT b.receiver_id, b.deleted_at, id FROM public.bill AS b
+          WHERE b.user_id = $1
+        ) b ON b.receiver_id = r.id
+
+        WHERE r.deleted_at IS NULL AND
+          r.user_id = $1 AND
+          b.deleted_at IS NULL AND
+          b.id IS NOT NULL
+
+        GROUP BY r.id
+
+        ORDER BY quantities DESC
+
+        LIMIT $2;
+      `,
+      [user.id, take],
+    );
   }
 }
