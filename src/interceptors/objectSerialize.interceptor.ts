@@ -3,15 +3,14 @@ import { plainToClass } from 'class-transformer';
 import { map, Observable } from 'rxjs';
 import {
   BillDto,
-  BillQuantitiesDto,
   ConsumerDto,
   CreatedBillDto,
   DeletedBillDto,
   LocationDto,
+  QuantitiesDeletedDto,
+  QuantitiesDto,
   ReceiverDto,
   RestoredBillDto,
-  TotalAmountDto,
-  TotalAmountWithoutDatesDto,
   UpdatedBillDto,
   UserWithBillInfoDto,
 } from 'src/dtos';
@@ -53,21 +52,27 @@ export class DeletedBillSerializerInterceptor extends ObjectSerializerIntercepto
   }
 }
 
-export class TotalAmountSerializerInterceptor extends ObjectSerializerInterceptor {
+export class QuantitiesSerializerInterceptor extends ObjectSerializerInterceptor {
   constructor() {
-    super(TotalAmountDto);
+    super(QuantitiesDto);
   }
 }
 
-export class BillQuantitiesSerializerInterceptor extends ObjectSerializerInterceptor {
+export class QuantitiesDeletedSerializerInterceptor extends ObjectSerializerInterceptor {
   constructor() {
-    super(BillQuantitiesDto);
+    super(QuantitiesDeletedDto);
   }
 }
 
-export class TotalAmountWithoutDatesSerializerInterceptor extends ObjectSerializerInterceptor {
+export class AllQuantitiesSerializerInterceptor extends ObjectSerializerInterceptor {
   constructor() {
-    super(TotalAmountWithoutDatesDto);
+    super(QuantitiesDto);
+  }
+}
+
+export class AllQuantitiesDeletedSerializerInterceptor extends ObjectSerializerInterceptor {
+  constructor() {
+    super(QuantitiesDeletedDto);
   }
 }
 

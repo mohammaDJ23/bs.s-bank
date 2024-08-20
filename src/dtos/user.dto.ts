@@ -44,4 +44,8 @@ export class UserDto {
   @Expose()
   @ApiProperty()
   deletedAt: Date;
+
+  @Expose()
+  @ApiProperty()
+  parent: UserDto;
 }
