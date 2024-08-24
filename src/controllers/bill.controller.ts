@@ -200,9 +200,10 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   findAllByUserId(
-    @Query('page', ParseIntPipe) page: number,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('filters', ParseBillListFiltersPipe) filters: BillListFiltersDto,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Query('filters', new DefaultValuePipe(new BillListFiltersDto()), ParseBillListFiltersPipe)
+    filters: BillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
     return this.billService.findAllByUserId(page, take, filters, user);
