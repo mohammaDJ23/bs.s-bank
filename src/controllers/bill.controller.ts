@@ -253,7 +253,6 @@ export class BillController {
     filters: DeletedBillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
-    console.log(filters);
     return this.billService.findAllDeleted(page, take, filters, user);
   }
 
