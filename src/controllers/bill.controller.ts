@@ -247,12 +247,13 @@ export class BillController {
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
   @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
   findAllDeleted(
-    @Query('page', ParseIntPipe) page: number,
-    @Query('take', ParseIntPipe) take: number,
-    @Query('filters', ParseBillListFiltersPipe)
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @Query('filters', new DefaultValuePipe(new DeletedBillListFiltersDto()), ParseBillListFiltersPipe)
     filters: DeletedBillListFiltersDto,
     @CurrentUser() user: User,
   ): Promise<[Bill[], number]> {
+    console.log(filters);
     return this.billService.findAllDeleted(page, take, filters, user);
   }
 
