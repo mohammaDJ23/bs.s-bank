@@ -6,19 +6,19 @@ import { UserRoles } from 'src/types';
 export class AllBillListFiltersDto {
   @IsString()
   @ApiProperty()
-  q: string;
+  q: string = '';
 
   @IsEnum(UserRoles, { each: true })
   @ApiProperty({ enum: [UserRoles] })
-  roles: UserRoles[];
+  roles: UserRoles[] = [UserRoles.OWNER, UserRoles.ADMIN, UserRoles.USER];
 
   @Type(() => Number)
   @IsNumber()
   @ApiProperty()
-  fromDate: number;
+  fromDate: number = 0;
 
   @Type(() => Number)
   @IsNumber()
   @ApiProperty()
-  toDate: number;
+  toDate: number = 0;
 }

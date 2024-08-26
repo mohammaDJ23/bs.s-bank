@@ -5,15 +5,15 @@ import { Type } from 'class-transformer';
 export class BillListFiltersDto {
   @IsString()
   @ApiProperty()
-  q: string;
+  q: string = '';
 
   @Type(() => Number)
   @IsNumber()
   @ApiProperty()
-  fromDate: number;
+  fromDate: number = 0;
 
   @Type(() => Number)
   @IsNumber()
   @ApiProperty()
-  toDate: number;
+  toDate: number = 0;
 }
