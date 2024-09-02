@@ -19,6 +19,7 @@ import {
   ErrorDto,
   LocationDto,
   LocationListFiltersDto,
+  MostActiveLocationsByReceiversDto,
   MostActiveLocationsDto,
   UpdateLocationDto,
 } from 'src/dtos';
@@ -29,6 +30,7 @@ import { ParseLocationListFiltersPipe } from 'src/pipes';
 import {
   LocationSerializerInterceptor,
   LocationsSerializerInterceptor,
+  MostActiveLocationsByReceiversSerializerInterceptor,
   MostActiveLocationsSerializerInterceptor,
   ResetCacheInterceptor,
 } from 'src/interceptors';
@@ -99,6 +101,21 @@ export class LocationController {
     @CurrentUser() user: User,
   ): Promise<MostActiveLocationsDto[]> {
     return this.locationService.mostActive(user, take);
+  }
+
+  @Get('location/most-active-locations-by-receivers')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(MostActiveLocationsByReceiversSerializerInterceptor)
+  @ApiQuery({ name: 'take', type: 'number' })
+  @ApiBearerAuth()
+  @ApiResponse({ status: HttpStatus.OK, type: MostActiveLocationsByReceiversDto, isArray: true })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, type: ErrorDto })
+  @ApiResponse({ status: HttpStatus.INTERNAL_SERVER_ERROR, type: ErrorDto })
+  mostActiveByReceivers(
+    @Query('take', new DefaultValuePipe(10), ParseIntPipe) take: number,
+    @CurrentUser() user: User,
+  ): Promise<MostActiveLocationsByReceiversDto[]> {
+    return this.locationService.mostActiveByReceivers(user, take);
   }
 
   @Get('location/:id')

@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 import {
   LastYearDto,
   MostActiveConsumersDto,
+  MostActiveLocationsByReceiversDto,
   MostActiveLocationsDto,
   MostActiveReceiversDto,
   MostActiveUsersDto,
@@ -49,6 +50,12 @@ export class MostActiveConsumersSerializerInterceptor extends ArraySerializerInt
 export class MostActiveLocationsSerializerInterceptor extends ArraySerializerInterceptor {
   constructor() {
     super(MostActiveLocationsDto);
+  }
+}
+
+export class MostActiveLocationsByReceiversSerializerInterceptor extends ArraySerializerInterceptor {
+  constructor() {
+    super(MostActiveLocationsByReceiversDto);
   }
 }
 

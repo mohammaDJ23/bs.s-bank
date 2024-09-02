@@ -5,6 +5,7 @@ import { Location, User } from '../entities';
 import {
   CreateBillDto,
   LocationListFiltersDto,
+  MostActiveLocationsByReceiversDto,
   MostActiveLocationsDto,
   UpdateBillDto,
   UpdateLocationDto,
@@ -147,6 +148,48 @@ export class LocationService {
         GROUP BY l.id
 
         ORDER BY quantities DESC
+
+        LIMIT $2;
+      `,
+      [user.id, take],
+    );
+  }
+
+  mostActiveByReceivers(user: User, take: number): Promise<MostActiveLocationsByReceiversDto[]> {
+    return this.locationRepository.query(
+      `
+        SELECT
+          json_build_object(
+            'id', l.id,
+            'name', l.name,
+            'createdAt', l.created_at,
+            'updatedAt', l.updated_at,
+            'deletedAt', l.deleted_at
+          ) AS location,
+          jsonb_agg(
+            json_build_object(
+              'id', r.id,
+              'name', r.name,
+              'createdAt', r.created_at,
+              'updatedAt', r.updated_at,
+              'deletedAt', r.deleted_at
+            )
+          ) AS receivers FROM public.location AS l
+
+        LEFT JOIN (
+          SELECT b.* FROM public.bill AS b
+        ) b on b.location_id = l.id AND b.deleted_at IS NULL AND b.user_id = $1
+
+        LEFT JOIN (
+          SELECT r.* FROM public.receiver AS r
+        ) r on r.id = b.receiver_id AND r.deleted_at IS NULL AND r.user_id = $1
+
+        WHERE l.user_id = $1 AND 
+          l.deleted_at IS NULL AND
+          b.id IS NOT NULL AND
+          r.id IS NOT NULL
+
+        GROUP BY l.id
 
         LIMIT $2;
       `,
