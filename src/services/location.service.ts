@@ -5,6 +5,7 @@ import { Location, User } from '../entities';
 import {
   CreateBillDto,
   LocationListFiltersDto,
+  MostActiveLocationsByReceiversDto,
   MostActiveLocationsDto,
   UpdateBillDto,
   UpdateLocationDto,
@@ -149,6 +150,59 @@ export class LocationService {
         ORDER BY quantities DESC
 
         LIMIT $2;
+      `,
+      [user.id, take],
+    );
+  }
+
+  mostActiveByReceivers(user: User, take: number): Promise<MostActiveLocationsByReceiversDto[]> {
+    return this.locationRepository.query(
+      `
+        SELECT 
+          json_build_object(
+            'id', (lr.location->>'id')::INTEGER,
+            'name', lr.location->>'name',
+            'createdAt', lr.location->>'createdAt',
+            'updatedAt', lr.location->>'updatedAt',
+            'deletedAt', lr.location->>'deletedAt'
+          ) AS location,
+          jsonb_agg(
+            json_build_object(
+              'receiver', lr.receiver,
+              'quantities', lr.quantities
+            )
+          ) AS receivers
+        FROM(
+          SELECT
+            COUNT(r.id) AS quantities,
+            json_build_object(
+              'id', l.id,
+              'name', l.name,
+              'createdAt', l.created_at,
+              'updatedAt', l.updated_at,
+              'deletedAt', l.deleted_at
+            ) AS location,
+            json_build_object(
+              'id', r.id,
+              'name', r.name,
+              'createdAt', r.created_at,
+              'updatedAt', r.updated_at,
+              'deletedAt', r.deleted_at
+            ) AS receiver
+          FROM public.bill AS b
+          RIGHT JOIN(
+            SELECT * FROM public.location AS l
+          ) l ON l.user_id = $1 AND l.id = b.location_id AND l.deleted_at IS NULL
+          RIGHT JOIN(
+            SELECT * FROM public.receiver AS r
+          ) r ON r.user_id = $1 AND r.id = b.receiver_id AND r.deleted_at IS NULL
+          WHERE b.user_id = $1 AND b.deleted_at IS NULL
+          GROUP BY l.id, l.name, l.created_at, l.updated_at, l.deleted_at,
+            r.id, r.name, r.created_at, r.updated_at, r.deleted_at
+        ) AS lr
+        GROUP BY lr.location->>'id', lr.location->>'name', lr.location->>'createdAt',
+          lr.location->>'updatedAt', lr.location->>'deletedAt'
+        LIMIT $2
       `,
       [user.id, take],
     );
