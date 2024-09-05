@@ -158,7 +158,8 @@ export class LocationService {
   mostActiveByReceivers(user: User, take: number): Promise<MostActiveLocationsByReceiversDto[]> {
     return this.locationRepository.query(
       `
-        SELECT 
+        SELECT
+          COUNT(lr.location->>'id') AS quantities,
           json_build_object(
             'id', (lr.location->>'id')::INTEGER,
             'name', lr.location->>'name',
@@ -202,6 +203,7 @@ export class LocationService {
         ) AS lr
         GROUP BY lr.location->>'id', lr.location->>'name', lr.location->>'createdAt',
           lr.location->>'updatedAt', lr.location->>'deletedAt'
+        ORDER BY quantities DESC
         LIMIT $2
       `,
       [user.id, take],
