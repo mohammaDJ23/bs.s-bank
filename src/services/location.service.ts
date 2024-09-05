@@ -159,7 +159,7 @@ export class LocationService {
     return this.locationRepository.query(
       `
         SELECT
-          COUNT(lr.location->>'id') AS quantities,
+          COUNT(lr.location->>'id')::INTEGER AS quantities,
           json_build_object(
             'id', (lr.location->>'id')::INTEGER,
             'name', lr.location->>'name',
@@ -200,6 +200,7 @@ export class LocationService {
           WHERE b.user_id = $1 AND b.deleted_at IS NULL
           GROUP BY l.id, l.name, l.created_at, l.updated_at, l.deleted_at,
             r.id, r.name, r.created_at, r.updated_at, r.deleted_at
+          ORDER BY quantities DESC
         ) AS lr
         GROUP BY lr.location->>'id', lr.location->>'name', lr.location->>'createdAt',
           lr.location->>'updatedAt', lr.location->>'deletedAt'
