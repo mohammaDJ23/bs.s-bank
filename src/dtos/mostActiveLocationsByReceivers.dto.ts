@@ -6,6 +6,10 @@ import { MostActiveReceiversDto } from './mostActiveReceivers.dto';
 export class MostActiveLocationsByReceiversDto {
   @Expose()
   @ApiProperty()
+  quantities: number;
+
+  @Expose()
+  @ApiProperty()
   @Type(() => LocationDto)
   location: LocationDto;
 
